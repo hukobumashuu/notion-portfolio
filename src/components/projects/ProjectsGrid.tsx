@@ -21,7 +21,7 @@ export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProp
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {collection.projects.map((project) => (
-            <ProjectCard key={project.id} project={project} _isEditing={isEditing} />
+            <ProjectCard key={project.id} project={project} isEditing={isEditing} />
           ))}
         </div>
       )}

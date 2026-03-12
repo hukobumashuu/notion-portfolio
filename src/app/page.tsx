@@ -1,9 +1,9 @@
+import { SaveStatusProvider } from '@/lib/context/SaveStatusContext'
+import type { Collection, Project } from '@/lib/types'
 import { getCollectionsWithProjects, getProfile } from '@/lib/supabase/queries'
-import { HeroSection } from '@/components/profile/HeroSection'
-import { ProjectsGrid } from '@/components/projects/ProjectsGrid'
+import { HeroSection } from '@/components/profile'
+import { ProjectsGrid } from '@/components/projects'
 
-// Revalidate at most every 60 seconds
-// Sprint 5 will add on-demand revalidation via /api/revalidate
 export const revalidate = 60
 
 export default async function PublicPage() {
@@ -13,16 +13,18 @@ export default async function PublicPage() {
   ])
 
   return (
-    <main className="bg-surface min-h-screen">
-      <div className="mx-auto max-w-5xl px-6 py-16">
-        <HeroSection profile={profile} />
+    <SaveStatusProvider>
+      <main className="bg-surface min-h-screen">
+        <div className="mx-auto max-w-5xl px-6 py-16">
+          <HeroSection profile={profile} />
 
-        <div className="mt-20 space-y-16">
-          {collectionsWithProjects.map((collection) => (
-            <ProjectsGrid key={collection.id} collection={collection} />
-          ))}
+          <div className="mt-20 space-y-16">
+            {collectionsWithProjects.map((collection: Collection & { projects: Project[] }) => (
+              <ProjectsGrid key={collection.id} collection={collection} isEditing={false} />
+            ))}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </SaveStatusProvider>
   )
 }

@@ -1,18 +1,32 @@
+'use client'
+
 import Image from 'next/image'
 import type { Project } from '@/lib/types'
 import { TagPill } from '@/components/ui/TagPill'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { ProjectModal } from './ProjectModal'
+import { EditableText } from '@/components/editor/EditableText'
+import { useSaveStatus } from '@/lib/context/SaveStatusContext'
+import { updateProject } from '@/lib/supabase/mutations' // ✅ not queries.ts
+
+const STATUS_OPTIONS = ['In Progress', 'Done', 'On Hold', 'Archived']
 
 interface ProjectCardProps {
   project: Project
-  _isEditing?: boolean
+  isEditing?: boolean
 }
 
-export function ProjectCard({ project, _isEditing = false }: ProjectCardProps) {
+export function ProjectCard({ project, isEditing = false }: ProjectCardProps) {
+  const { triggerSave } = useSaveStatus()
+
+  function handleSave(field: 'title' | 'emoji' | 'status') {
+    return (value: string) => {
+      triggerSave(() => updateProject(project.id, { [field]: value }))
+    }
+  }
+
   return (
-    <ProjectModal project={project} _isEditing={_isEditing}>
-      {/* Card trigger — rendered as the modal's trigger button */}
+    <ProjectModal project={project} isEditing={isEditing}>
       <div className="group rounded-card border-surface-border bg-surface-card hover:border-teal/40 cursor-pointer border transition-colors">
         {/* Thumbnail */}
         <div className="rounded-t-card bg-surface relative h-40 w-full overflow-hidden">
@@ -25,22 +39,34 @@ export function ProjectCard({ project, _isEditing = false }: ProjectCardProps) {
               sizes="(max-width: 768px) 100vw, 33vw"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-4xl">
-              {project.emoji ?? '📄'}
+            <div className="flex h-full w-full items-center justify-center">
+              <EditableText
+                as="span"
+                value={project.emoji ?? '📄'}
+                onSave={handleSave('emoji')}
+                isEditing={isEditing}
+                singleLine
+                className="text-4xl"
+                placeholder="📄"
+              />
             </div>
           )}
         </div>
 
-        {/* Content */}
-        <div className="p-4">
-          <div className="mb-3 flex items-center gap-2">
-            {project.thumbnail_url && <span className="text-lg">{project.emoji ?? '📄'}</span>}
-            <h3 className="text-text-primary text-sm leading-snug font-semibold">
-              {project.title}
-            </h3>
+        {/* Content — stopPropagation prevents opening modal when clicking editable fields */}
+        <div className="p-4" onClick={(e) => isEditing && e.stopPropagation()}>
+          <div className="mb-3">
+            <EditableText
+              as="h3"
+              value={project.title}
+              onSave={handleSave('title')}
+              isEditing={isEditing}
+              singleLine
+              className="text-text-primary text-sm leading-snug font-semibold"
+              placeholder="Project title..."
+            />
           </div>
 
-          {/* Tool tags */}
           {project.tool_tags.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-1.5">
               {project.tool_tags.map((tag) => (
@@ -49,8 +75,22 @@ export function ProjectCard({ project, _isEditing = false }: ProjectCardProps) {
             </div>
           )}
 
-          {/* Status */}
-          <StatusBadge status={project.status} />
+          {isEditing ? (
+            <select
+              value={project.status ?? 'In Progress'}
+              onChange={(e) => handleSave('status')(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="border-surface-border bg-surface text-text-primary mt-1 rounded-md border px-2 py-1 text-xs focus:outline-none"
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <StatusBadge status={project.status} />
+          )}
         </div>
       </div>
     </ProjectModal>

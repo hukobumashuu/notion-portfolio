@@ -5,18 +5,22 @@ import Image from 'next/image'
 import type { ContentBlock, Project } from '@/lib/types'
 import { TagPill } from '@/components/ui/TagPill'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { EditableText } from '@/components/editor/EditableText'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
+import { useSaveStatus } from '@/lib/context/SaveStatusContext'
+import { updateContentBlock, updateProject } from '@/lib/supabase/mutations'
 
 interface ProjectModalProps {
   project: Project
-  _isEditing?: boolean
+  isEditing?: boolean
   children: React.ReactNode
 }
 
-export function ProjectModal({ project, children }: ProjectModalProps) {
+export function ProjectModal({ project, isEditing = false, children }: ProjectModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
   const [isLoadingBlocks, setIsLoadingBlocks] = useState(false)
+  const { triggerSave } = useSaveStatus()
 
   // Fetch blocks when modal opens
   useEffect(() => {
@@ -121,7 +125,17 @@ export function ProjectModal({ project, children }: ProjectModalProps) {
 
                   {project.duration && (
                     <MetaRow label="Duration">
-                      <span className="text-text-primary text-sm">{project.duration}</span>
+                      <EditableText
+                        as="span"
+                        value={project.duration}
+                        onSave={(val) =>
+                          triggerSave(() => updateProject(project.id, { duration: val }))
+                        }
+                        isEditing={isEditing}
+                        singleLine
+                        className="text-text-primary text-sm"
+                        placeholder="e.g. 10 weeks"
+                      />
                     </MetaRow>
                   )}
                 </div>
@@ -139,7 +153,7 @@ export function ProjectModal({ project, children }: ProjectModalProps) {
                 ) : (
                   <div className="space-y-4">
                     {blocks.map((block) => (
-                      <ContentBlockRenderer key={block.id} block={block} />
+                      <ContentBlockRenderer key={block.id} block={block} isEditing={isEditing} />
                     ))}
                   </div>
                 )}
@@ -163,23 +177,56 @@ function MetaRow({ label, children }: { label: string; children: React.ReactNode
   )
 }
 
-function ContentBlockRenderer({ block }: { block: ContentBlock }) {
+function ContentBlockRenderer({ block, isEditing }: { block: ContentBlock; isEditing: boolean }) {
+  const { triggerSave } = useSaveStatus()
+
+  function handleSave(value: string) {
+    // ✅ Wraps string in object — matches ContentBlockUpdate type
+    triggerSave(() => updateContentBlock(block.id, { content: value }))
+  }
+
+  const editableProps = {
+    value: block.content ?? '',
+    onSave: handleSave,
+    isEditing,
+  }
+
   switch (block.type) {
     case 'heading':
       return (
         <h3 className="text-teal flex items-center gap-2 text-lg font-semibold">
           <span>✳</span>
-          {block.content}
+          <EditableText {...editableProps} as="span" singleLine placeholder="Section heading..." />
         </h3>
       )
     case 'subheading':
-      return <h4 className="text-amber-portfolio text-base font-semibold">{block.content}</h4>
+      return (
+        <EditableText
+          {...editableProps}
+          as="h4"
+          singleLine
+          className="text-amber-portfolio text-base font-semibold"
+          placeholder="Subheading..."
+        />
+      )
     case 'paragraph':
-      return <p className="text-text-muted text-sm leading-relaxed">{block.content}</p>
+      return (
+        <EditableText
+          {...editableProps}
+          as="p"
+          className="text-text-muted text-sm leading-relaxed"
+          placeholder="Write something..."
+        />
+      )
     case 'blockquote':
       return (
         <blockquote className="border-teal border-l-2 pl-4">
-          <p className="text-teal text-sm italic">{block.content}</p>
+          <EditableText
+            {...editableProps}
+            as="p"
+            className="text-teal text-sm italic"
+            placeholder="A key quote or insight..."
+          />
         </blockquote>
       )
     default:

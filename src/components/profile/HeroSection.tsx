@@ -1,16 +1,30 @@
+'use client'
+
 import Image from 'next/image'
 import type { Profile } from '@/lib/types'
+import { EditableText } from '@/components/editor/EditableText'
+import { useSaveStatus } from '@/lib/context/SaveStatusContext'
+import { updateProfile } from '@/lib/supabase/mutations' // ✅ not queries.ts
 
 interface HeroSectionProps {
   profile: Profile | null
-  _isEditing?: boolean
+  isEditing?: boolean
 }
 
-export function HeroSection({ profile }: HeroSectionProps) {
+export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
+  const { triggerSave } = useSaveStatus()
+
   const name = profile?.name ?? 'Hey there 👋'
   const role = profile?.role ?? 'your role'
-  const bio = profile?.bio ?? 'A short bio about yourself.'
+  const bio = profile?.bio ?? 'with a passion for something great.'
   const avatarUrl = profile?.avatar_url
+
+  function handleSave(field: keyof Pick<Profile, 'name' | 'role' | 'bio'>) {
+    return (value: string) => {
+      if (!profile) return
+      triggerSave(() => updateProfile(profile.id, { [field]: value }))
+    }
+  }
 
   return (
     <section className="flex items-start gap-6">
@@ -25,10 +39,34 @@ export function HeroSection({ profile }: HeroSectionProps) {
 
       {/* Text */}
       <div className="flex-1">
-        <h1 className="text-text-primary text-3xl font-bold">{name}</h1>
+        <EditableText
+          as="h1"
+          value={name}
+          onSave={handleSave('name')}
+          isEditing={isEditing}
+          singleLine
+          className="text-text-primary text-3xl font-bold"
+          placeholder="Your name..."
+        />
         <p className="text-text-muted mt-2">
-          A <span className="text-teal font-medium">{role}</span>
-          {bio.startsWith('A') ? bio.slice(1) : ` — ${bio}`}
+          {'A '}
+          <EditableText
+            as="span"
+            value={role}
+            onSave={handleSave('role')}
+            isEditing={isEditing}
+            singleLine
+            className="text-teal font-medium"
+            placeholder="your role"
+          />{' '}
+          <EditableText
+            as="span"
+            value={bio}
+            onSave={handleSave('bio')}
+            isEditing={isEditing}
+            className="text-text-muted"
+            placeholder="with a passion for..."
+          />
         </p>
       </div>
     </section>
