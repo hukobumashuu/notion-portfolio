@@ -2,13 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import type { ContentBlock, Project } from '@/lib/types'
+import type { ContentBlock, ContentBlockType, Project, ToolTag } from '@/lib/types'
 import { TagPill } from '@/components/ui/TagPill'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EditableText } from '@/components/editor/EditableText'
+import { TagEditor } from '@/components/editor/TagEditor'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
-import { updateContentBlock, updateProject } from '@/lib/supabase/mutations'
+import {
+  updateContentBlock,
+  updateProject,
+  addContentBlock,
+  deleteContentBlock,
+} from '@/lib/supabase/mutations'
+import { cn } from '@/lib/utils'
 
 interface ProjectModalProps {
   project: Project
@@ -16,11 +23,23 @@ interface ProjectModalProps {
   children: React.ReactNode
 }
 
+const BLOCK_TYPES: { type: ContentBlockType; label: string; icon: string }[] = [
+  { type: 'heading', label: 'Heading', icon: 'H1' },
+  { type: 'subheading', label: 'Subheading', icon: 'H2' },
+  { type: 'paragraph', label: 'Paragraph', icon: '¶' },
+  { type: 'blockquote', label: 'Quote', icon: '"' },
+]
+
 export function ProjectModal({ project, isEditing = false, children }: ProjectModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
   const [isLoadingBlocks, setIsLoadingBlocks] = useState(false)
   const { triggerSave } = useSaveStatus()
+
+  const [localToolTags, setLocalToolTags] = useState(project.tool_tags)
+  const [localSectorTags, setLocalSectorTags] = useState(project.sector_tags)
+  const [localStatus] = useState(project.status)
+  const [localDuration, setLocalDuration] = useState(project.duration)
 
   // Fetch blocks when modal opens
   useEffect(() => {
@@ -34,7 +53,6 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
         .select('*')
         .eq('project_id', project.id)
         .order('position', { ascending: true })
-
       setBlocks(data ?? [])
       setIsLoadingBlocks(false)
     }
@@ -51,6 +69,23 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen])
+
+  async function handleAddBlock(type: ContentBlockType) {
+    await addContentBlock(project.id, type, blocks.length)
+    // Refetch inline — not via shared loadBlocks to keep it out of effect deps
+    const supabase = createBrowserClient()
+    const { data } = await supabase
+      .from('content_blocks')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('position', { ascending: true })
+    setBlocks(data ?? [])
+  }
+
+  async function handleDeleteBlock(id: string) {
+    await deleteContentBlock(id)
+    setBlocks((prev) => prev.filter((b) => b.id !== id))
+  }
 
   return (
     <>
@@ -97,40 +132,69 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
 
                 {/* Metadata rows */}
                 <div className="mb-8 space-y-3">
-                  {project.tool_tags.length > 0 && (
+                  {(localToolTags.length > 0 || isEditing) && (
                     <MetaRow label="Tools Used">
-                      <div className="flex flex-wrap gap-1.5">
-                        {project.tool_tags.map((tag) => (
-                          <TagPill key={tag.label} label={tag.label} color={tag.color} />
-                        ))}
-                      </div>
+                      {isEditing ? (
+                        <TagEditor
+                          tags={localToolTags}
+                          withColor
+                          placeholder="Add tool..."
+                          onChange={(tags) => {
+                            setLocalToolTags(tags as ToolTag[]) // ✅ instant UI update
+                            triggerSave(() =>
+                              updateProject(project.id, { tool_tags: tags as ToolTag[] }),
+                            )
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {localToolTags.map((tag) => (
+                            <TagPill key={tag.label} label={tag.label} color={tag.color} />
+                          ))}
+                        </div>
+                      )}
                     </MetaRow>
                   )}
 
-                  {project.sector_tags.length > 0 && (
+                  {(localSectorTags.length > 0 || isEditing) && (
                     <MetaRow label="Sector">
-                      <div className="flex flex-wrap gap-1.5">
-                        {project.sector_tags.map((tag) => (
-                          <TagPill key={tag} label={tag} />
-                        ))}
-                      </div>
+                      {isEditing ? (
+                        <TagEditor
+                          tags={localSectorTags.map((label) => ({ label }))}
+                          withColor={false}
+                          placeholder="Add sector..."
+                          onChange={(tags) => {
+                            setLocalSectorTags(tags.map((t) => t.label)) // ✅ instant UI update
+                            triggerSave(() =>
+                              updateProject(project.id, { sector_tags: tags.map((t) => t.label) }),
+                            )
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {localSectorTags.map((tag) => (
+                            <TagPill key={tag} label={tag} />
+                          ))}
+                        </div>
+                      )}
                     </MetaRow>
                   )}
 
-                  {project.status && (
+                  {localStatus && (
                     <MetaRow label="Status">
-                      <StatusBadge status={project.status} />
+                      <StatusBadge status={localStatus} />
                     </MetaRow>
                   )}
 
-                  {project.duration && (
+                  {(localDuration || isEditing) && (
                     <MetaRow label="Duration">
                       <EditableText
                         as="span"
-                        value={project.duration}
-                        onSave={(val) =>
+                        value={localDuration ?? ''}
+                        onSave={(val) => {
+                          setLocalDuration(val) // ✅ instant UI update
                           triggerSave(() => updateProject(project.id, { duration: val }))
-                        }
+                        }}
                         isEditing={isEditing}
                         singleLine
                         className="text-text-primary text-sm"
@@ -153,8 +217,29 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
                 ) : (
                   <div className="space-y-4">
                     {blocks.map((block) => (
-                      <ContentBlockRenderer key={block.id} block={block} isEditing={isEditing} />
+                      <ContentBlockRenderer
+                        key={block.id}
+                        block={block}
+                        isEditing={isEditing}
+                        onDelete={() => handleDeleteBlock(block.id)}
+                      />
                     ))}
+
+                    {/* ── Add block picker (editor only) ── */}
+                    {isEditing && (
+                      <div className="border-surface-border mt-4 flex flex-wrap gap-2 border-t pt-4">
+                        {BLOCK_TYPES.map(({ type, label, icon }) => (
+                          <button
+                            key={type}
+                            onClick={() => handleAddBlock(type)}
+                            className="border-surface-border text-text-muted hover:border-teal hover:text-teal flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs transition-colors"
+                          >
+                            <span className="font-mono">{icon}</span>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -177,11 +262,18 @@ function MetaRow({ label, children }: { label: string; children: React.ReactNode
   )
 }
 
-function ContentBlockRenderer({ block, isEditing }: { block: ContentBlock; isEditing: boolean }) {
+function ContentBlockRenderer({
+  block,
+  isEditing,
+  onDelete,
+}: {
+  block: ContentBlock
+  isEditing: boolean
+  onDelete: () => void
+}) {
   const { triggerSave } = useSaveStatus()
 
   function handleSave(value: string) {
-    // ✅ Wraps string in object — matches ContentBlockUpdate type
     triggerSave(() => updateContentBlock(block.id, { content: value }))
   }
 
@@ -191,45 +283,67 @@ function ContentBlockRenderer({ block, isEditing }: { block: ContentBlock; isEdi
     isEditing,
   }
 
-  switch (block.type) {
-    case 'heading':
-      return (
-        <h3 className="text-teal flex items-center gap-2 text-lg font-semibold">
-          <span>✳</span>
-          <EditableText {...editableProps} as="span" singleLine placeholder="Section heading..." />
-        </h3>
-      )
-    case 'subheading':
-      return (
-        <EditableText
-          {...editableProps}
-          as="h4"
-          singleLine
-          className="text-amber-portfolio text-base font-semibold"
-          placeholder="Subheading..."
-        />
-      )
-    case 'paragraph':
-      return (
-        <EditableText
-          {...editableProps}
-          as="p"
-          className="text-text-muted text-sm leading-relaxed"
-          placeholder="Write something..."
-        />
-      )
-    case 'blockquote':
-      return (
-        <blockquote className="border-teal border-l-2 pl-4">
+  const blockContent = (() => {
+    switch (block.type) {
+      case 'heading':
+        return (
+          <h3 className="text-teal flex items-center gap-2 text-lg font-semibold">
+            <span>✳</span>
+            <EditableText
+              {...editableProps}
+              as="span"
+              singleLine
+              placeholder="Section heading..."
+            />
+          </h3>
+        )
+      case 'subheading':
+        return (
+          <EditableText
+            {...editableProps}
+            as="h4"
+            singleLine
+            className="text-amber-portfolio text-base font-semibold"
+            placeholder="Subheading..."
+          />
+        )
+      case 'paragraph':
+        return (
           <EditableText
             {...editableProps}
             as="p"
-            className="text-teal text-sm italic"
-            placeholder="A key quote or insight..."
+            className="text-text-muted text-sm leading-relaxed"
+            placeholder="Write something..."
           />
-        </blockquote>
-      )
-    default:
-      return null
-  }
+        )
+      case 'blockquote':
+        return (
+          <blockquote className="border-teal border-l-2 pl-4">
+            <EditableText
+              {...editableProps}
+              as="p"
+              className="text-teal text-sm italic"
+              placeholder="A key quote or insight..."
+            />
+          </blockquote>
+        )
+      default:
+        return null
+    }
+  })()
+
+  return (
+    <div className={cn('group/block relative', isEditing && 'pr-8')}>
+      {blockContent}
+      {isEditing && (
+        <button
+          onClick={onDelete}
+          className="text-text-muted absolute top-0 right-0 flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all group-hover/block:opacity-100 hover:text-red-400"
+          aria-label="Delete block"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  )
 }

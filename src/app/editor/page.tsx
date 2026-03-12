@@ -6,6 +6,7 @@ import { ProjectsGrid } from '@/components/projects'
 import { SaveStatusProvider } from '@/lib/context/SaveStatusContext'
 import { EditorSaveBar } from '@/components/editor/EditorSavebar'
 import type { Collection, Project } from '@/lib/types'
+import { AddSectionButton } from '@/components/projects/AddSectionButton'
 
 export default async function EditorPage() {
   const supabase = await createServerClient()
@@ -26,6 +27,8 @@ export default async function EditorPage() {
           {collections.map((collection: Collection & { projects: Project[] }) => (
             <ProjectsGrid key={collection.id} collection={collection} isEditing={true} />
           ))}
+
+          <AddSectionButton position={collections.length} />
         </div>
       </main>
     </SaveStatusProvider>

@@ -7,7 +7,12 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { ProjectModal } from './ProjectModal'
 import { EditableText } from '@/components/editor/EditableText'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
-import { updateProject } from '@/lib/supabase/mutations' // ✅ not queries.ts
+import { updateProject } from '@/lib/supabase/mutations'
+import { ImageUpload } from '@/components/editor/ImageUpload'
+import { useState } from 'react'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { deleteProject } from '@/lib/supabase/mutations'
+import { useRouter } from 'next/navigation'
 
 const STATUS_OPTIONS = ['In Progress', 'Done', 'On Hold', 'Archived']
 
@@ -18,6 +23,9 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, isEditing = false }: ProjectCardProps) {
   const { triggerSave } = useSaveStatus()
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
 
   function handleSave(field: 'title' | 'emoji' | 'status') {
     return (value: string) => {
@@ -25,12 +33,56 @@ export function ProjectCard({ project, isEditing = false }: ProjectCardProps) {
     }
   }
 
+  async function handleDelete() {
+    setIsDeleting(true)
+    try {
+      await deleteProject(project.id)
+      router.refresh()
+    } finally {
+      setIsDeleting(false)
+      setShowConfirm(false)
+    }
+  }
+
   return (
     <ProjectModal project={project} isEditing={isEditing}>
       <div className="group rounded-card border-surface-border bg-surface-card hover:border-teal/40 cursor-pointer border transition-colors">
         {/* Thumbnail */}
+
         <div className="rounded-t-card bg-surface relative h-40 w-full overflow-hidden">
-          {project.thumbnail_url ? (
+          {isEditing ? (
+            // ✅ Stop upload click from bubbling to the modal trigger
+            <div onClick={(e) => e.stopPropagation()} className="h-full w-full">
+              <ImageUpload
+                bucket="thumbnails"
+                path={project.id}
+                onUpload={(url) =>
+                  triggerSave(() => updateProject(project.id, { thumbnail_url: url }))
+                }
+                className="h-full w-full"
+              >
+                {project.thumbnail_url ? (
+                  <Image
+                    src={project.thumbnail_url}
+                    alt={project.title}
+                    fill
+                    className="object-cover opacity-80"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
+                ) : (
+                  <div className="text-text-muted flex h-full w-full flex-col items-center justify-center gap-1">
+                    <span className="text-2xl">🖼️</span>
+                    <span className="text-xs">Click to upload</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors hover:bg-black/40">
+                  <span className="text-xs font-medium text-white opacity-0 transition-opacity hover:opacity-100">
+                    Change thumbnail
+                  </span>
+                </div>
+              </ImageUpload>
+            </div>
+          ) : project.thumbnail_url ? (
             <Image
               src={project.thumbnail_url}
               alt={project.title}
@@ -52,9 +104,8 @@ export function ProjectCard({ project, isEditing = false }: ProjectCardProps) {
             </div>
           )}
         </div>
-
         {/* Content — stopPropagation prevents opening modal when clicking editable fields */}
-        <div className="p-4" onClick={(e) => isEditing && e.stopPropagation()}>
+        <div className="p-4">
           <div className="mb-3">
             <EditableText
               as="h3"
@@ -91,6 +142,28 @@ export function ProjectCard({ project, isEditing = false }: ProjectCardProps) {
           ) : (
             <StatusBadge status={project.status} />
           )}
+
+          {isEditing && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowConfirm(true)
+              }}
+              className="bg-surface-card/80 text-text-muted absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
+              aria-label="Delete project"
+            >
+              🗑
+            </button>
+          )}
+
+          <ConfirmDialog
+            isOpen={showConfirm}
+            title="Delete project?"
+            description={`"${project.title}" and all its content will be permanently deleted.`}
+            onConfirm={handleDelete}
+            onCancel={() => setShowConfirm(false)}
+            isLoading={isDeleting}
+          />
         </div>
       </div>
     </ProjectModal>

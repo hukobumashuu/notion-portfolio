@@ -1,6 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { env } from '@/lib/env'
-import type { Profile, Project, ContentBlock } from '@/lib/types'
+import type { Profile, Project, ContentBlock, ContentBlockType } from '@/lib/types'
 
 // Untyped client — our function signatures are the external type contract.
 // The manually-written Database interface doesn't satisfy Supabase's internal
@@ -51,6 +51,71 @@ type ContentBlockUpdate = Partial<Pick<ContentBlock, 'content' | 'type' | 'posit
 export async function updateContentBlock(id: string, fields: ContentBlockUpdate): Promise<void> {
   const supabase = getClient()
   const { error } = await supabase.from('content_blocks').update(fields).eq('id', id)
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}
+
+export async function addContentBlock(
+  projectId: string,
+  type: ContentBlockType,
+  position: number,
+): Promise<void> {
+  const supabase = getClient()
+  const { error } = await supabase.from('content_blocks').insert({
+    project_id: projectId,
+    type,
+    content: '',
+    position,
+  })
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}
+
+export async function deleteContentBlock(id: string): Promise<void> {
+  const supabase = getClient()
+  const { error } = await supabase.from('content_blocks').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}
+
+export async function addProject(collectionId: string, position: number): Promise<string> {
+  const supabase = getClient()
+  const { data, error } = await supabase
+    .from('projects')
+    .insert({
+      collection_id: collectionId,
+      title: 'Untitled Project',
+      emoji: '📄',
+      position,
+      status: 'In Progress',
+      sector_tags: [],
+      tool_tags: [],
+    })
+    .select('id')
+    .single()
+
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+  return data.id
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  const supabase = getClient()
+  const { error } = await supabase.from('projects').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}
+
+export async function updateCollection(id: string, title: string): Promise<void> {
+  const supabase = getClient()
+  const { error } = await supabase.from('collections').update({ title }).eq('id', id)
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}
+
+export async function addCollection(position: number): Promise<void> {
+  const supabase = getClient()
+  const { error } = await supabase.from('collections').insert({ title: 'New Section', position })
   if (error) throw new Error(error.message)
   await revalidatePublicPage()
 }

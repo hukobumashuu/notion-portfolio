@@ -65,6 +65,7 @@ export function EditableText({
       onInput={handleInput}
       onKeyDown={handleKeyDown}
       onPaste={handlePaste}
+      onClick={(e) => e.stopPropagation()}
       data-placeholder={placeholder}
       className={cn(
         className,

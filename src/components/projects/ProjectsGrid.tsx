@@ -1,5 +1,11 @@
+'use client'
+
 import type { Collection, Project } from '@/lib/types'
 import { ProjectCard } from './ProjectCard'
+import { AddProjectCard } from './AddProjectCard'
+import { EditableText } from '@/components/editor/EditableText'
+import { useSaveStatus } from '@/lib/context/SaveStatusContext'
+import { updateCollection } from '@/lib/supabase/mutations'
 
 interface ProjectsGridProps {
   collection: Collection & { projects: Project[] }
@@ -7,13 +13,20 @@ interface ProjectsGridProps {
 }
 
 export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProps) {
+  const { triggerSave } = useSaveStatus()
   return (
     <section>
       {/* Collection title */}
-      <div className="mb-6 flex items-center gap-2">
-        <span className="text-text-muted text-sm font-medium">⊞</span>
-        <h2 className="text-text-primary text-lg font-semibold">{collection.title}</h2>
-      </div>
+      <h2 className="text-text-primary text-lg font-semibold">
+        <EditableText
+          as="span"
+          value={collection.title}
+          onSave={(val) => triggerSave(() => updateCollection(collection.id, val))}
+          isEditing={isEditing}
+          singleLine
+          placeholder="Section title..."
+        />
+      </h2>
 
       {/* Card grid */}
       {collection.projects.length === 0 ? (
@@ -23,6 +36,9 @@ export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProp
           {collection.projects.map((project) => (
             <ProjectCard key={project.id} project={project} isEditing={isEditing} />
           ))}
+          {isEditing && (
+            <AddProjectCard collectionId={collection.id} position={collection.projects.length} />
+          )}
         </div>
       )}
     </section>

@@ -5,7 +5,7 @@ import type { Profile } from '@/lib/types'
 import { EditableText } from '@/components/editor/EditableText'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
 import { updateProfile } from '@/lib/supabase/mutations' // ✅ not queries.ts
-
+import { ImageUpload } from '@/components/editor/ImageUpload'
 interface HeroSectionProps {
   profile: Profile | null
   isEditing?: boolean
@@ -30,7 +30,23 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
     <section className="flex items-start gap-6">
       {/* Avatar */}
       <div className="bg-surface-card relative h-20 w-20 shrink-0 overflow-hidden rounded-full">
-        {avatarUrl ? (
+        {isEditing ? (
+          <ImageUpload
+            bucket="avatars"
+            path="avatar"
+            onUpload={(url) => triggerSave(() => updateProfile(profile!.id, { avatar_url: url }))}
+            className="h-full w-full rounded-full"
+          >
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="80px" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-3xl">🧑‍💻</div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-colors hover:bg-black/50">
+              <span className="text-lg opacity-0 transition-opacity hover:opacity-100">📷</span>
+            </div>
+          </ImageUpload>
+        ) : avatarUrl ? (
           <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="80px" />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-3xl">🧑‍💻</div>

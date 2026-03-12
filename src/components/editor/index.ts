@@ -1,3 +1,5 @@
 export { EditableText } from './EditableText'
 export { SaveIndicator } from './SaveIndicator'
 export { EditorToolbar } from './EditorToolbar'
+export { TagEditor } from './TagEditor'
+export { ImageUpload } from './ImageUpload'
