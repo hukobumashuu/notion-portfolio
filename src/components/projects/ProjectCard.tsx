@@ -7,11 +7,10 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { ProjectModal } from './ProjectModal'
 import { EditableText } from '@/components/editor/EditableText'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
-import { updateProject } from '@/lib/supabase/mutations'
+import { updateProject, deleteProject } from '@/lib/supabase/mutations'
 import { ImageUpload } from '@/components/editor/ImageUpload'
-import { useState } from 'react'
+import { useState, useEffect } from 'react' // ✅ Added useEffect
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { deleteProject } from '@/lib/supabase/mutations'
 import { useRouter } from 'next/navigation'
 
 const STATUS_OPTIONS = ['In Progress', 'Done', 'On Hold', 'Archived']
@@ -27,6 +26,11 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
   const [project, setProject] = useState(initialProject)
+
+  // ✅ THE BUG FIX: Sync local state when Next.js passes down a new array
+  useEffect(() => {
+    setProject(initialProject)
+  }, [initialProject])
 
   function handleProjectUpdate(fields: Partial<Project>) {
     setProject((prev) => ({ ...prev, ...fields }))
@@ -52,12 +56,10 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
 
   return (
     <ProjectModal project={project} isEditing={isEditing} onProjectUpdate={handleProjectUpdate}>
-      <div className="group rounded-card border-surface-border bg-surface-card hover:border-teal/40 cursor-pointer border transition-colors">
-        {/* Thumbnail */}
-
-        <div className="rounded-t-card bg-surface relative h-40 w-full overflow-hidden">
+      {/* ✅ L-02: Added hover lift (-translate-y-0.5) and kept 'relative' */}
+      <div className="group rounded-card border-surface-border bg-surface-card hover:border-teal/40 hover:shadow-teal/5 flex h-full cursor-pointer flex-col border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+        <div className="rounded-t-card bg-surface relative h-48 w-full shrink-0 overflow-hidden">
           {isEditing ? (
-            // ✅ Stop upload click from bubbling to the modal trigger
             <div onClick={(e) => e.stopPropagation()} className="h-full w-full">
               <ImageUpload
                 bucket="thumbnails"
@@ -113,8 +115,9 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
             </div>
           )}
         </div>
-        {/* Content — stopPropagation prevents opening modal when clicking editable fields */}
-        <div className="p-4">
+
+        {/* ✅ L-02: Content padding is now p-5 */}
+        <div className="flex flex-1 flex-col p-5">
           <div className="mb-3">
             <EditableText
               as="h3"
@@ -122,7 +125,7 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
               onSave={handleSave('title')}
               isEditing={isEditing}
               singleLine
-              className="text-text-primary text-sm leading-snug font-semibold"
+              className="text-text-primary text-[13px] leading-snug font-semibold"
               placeholder="Project title..."
             />
           </div>
@@ -135,22 +138,24 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
             </div>
           )}
 
-          {isEditing ? (
-            <select
-              value={project.status ?? 'In Progress'}
-              onChange={(e) => handleSave('status')(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              className="border-surface-border bg-surface text-text-primary mt-1 rounded-md border px-2 py-1 text-xs focus:outline-none"
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <StatusBadge status={project.status} />
-          )}
+          <div className="mt-auto pt-2">
+            {isEditing ? (
+              <select
+                value={project.status ?? 'In Progress'}
+                onChange={(e) => handleSave('status')(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="border-surface-border bg-surface text-text-primary mt-1 rounded-md border px-2 py-1 text-xs focus:outline-none"
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <StatusBadge status={project.status} />
+            )}
+          </div>
 
           {isEditing && (
             <button
@@ -158,7 +163,7 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
                 e.stopPropagation()
                 setShowConfirm(true)
               }}
-              className="bg-surface-card/80 text-text-muted absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
+              className="bg-surface-card/80 text-text-muted absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-md transition-opacity hover:text-red-400"
               aria-label="Delete project"
             >
               🗑

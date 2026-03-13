@@ -21,14 +21,17 @@ export default async function EditorPage() {
   return (
     <SaveStatusProvider>
       <EditorSaveBar />
-      <main className="mx-auto max-w-4xl space-y-16 px-6 pt-20 pb-16">
-        <HeroSection profile={profile} isEditing={true} />
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
-          {collections.map((collection: Collection & { projects: Project[] }) => (
-            <ProjectsGrid key={collection.id} collection={collection} isEditing={true} />
-          ))}
+      <main className="bg-surface relative z-10 min-h-screen pt-16">
+        {/* MATCHES PUBLIC PAGE EXACTLY */}
+        <div className="mx-auto w-full max-w-5xl px-6 py-16 sm:px-10">
+          <HeroSection profile={profile} isEditing={true} />
 
-          <AddSectionButton position={collections.length} />
+          <div className="mt-24 space-y-20">
+            {collections.map((collection: Collection & { projects: Project[] }) => (
+              <ProjectsGrid key={collection.id} collection={collection} isEditing={true} />
+            ))}
+            <AddSectionButton position={collections.length} />
+          </div>
         </div>
       </main>
     </SaveStatusProvider>

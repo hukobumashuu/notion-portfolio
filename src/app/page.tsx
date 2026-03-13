@@ -38,11 +38,12 @@ export default async function PublicPage() {
 
   return (
     <SaveStatusProvider>
-      <main className="bg-surface min-h-screen">
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
-          <HeroSection profile={profile} />
+      <main className="bg-surface relative min-h-screen">
+        {/* Unified Notion Width: max-w-5xl perfectly fits a 3-col grid */}
+        <div className="mx-auto w-full max-w-5xl px-6 py-16 sm:px-10">
+          <HeroSection profile={profile} isEditing={false} />
 
-          <div className="mt-20 space-y-16">
+          <div className="mt-24 space-y-20">
             {collectionsWithProjects.map((collection: Collection & { projects: Project[] }) => (
               <ProjectsGrid key={collection.id} collection={collection} isEditing={false} />
             ))}

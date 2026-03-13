@@ -1,21 +1,38 @@
-const STATUS_STYLES: Record<string, string> = {
-  Done: 'bg-surface-border text-text-muted',
-  'In Progress': 'bg-amber-portfolio/20 text-amber-portfolio',
+const STATUS_CONFIG: Record<string, { color: string; dot: string }> = {
+  Done: {
+    color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+    dot: 'bg-emerald-400',
+  },
+  'In Progress': {
+    color: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+    dot: 'bg-amber-400',
+  },
+  'On Hold': {
+    color: 'text-text-muted bg-surface-border/30 border-surface-border',
+    dot: 'bg-text-muted',
+  },
+  Archived: {
+    color: 'text-text-muted bg-surface-border/30 border-surface-border',
+    dot: 'bg-text-muted',
+  },
 }
 
-interface StatusBadgeProps {
-  status: string | null
+// ✅ FIX 3: Defined a hardcoded fallback so TypeScript knows it can never be undefined
+const FALLBACK_CONFIG = {
+  color: 'text-text-muted bg-surface-border/30 border-surface-border',
+  dot: 'bg-text-muted',
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status }: { status: string | null }) {
   if (!status) return null
 
-  const style = STATUS_STYLES[status] ?? 'bg-surface-border text-text-muted'
+  const config = STATUS_CONFIG[status] ?? FALLBACK_CONFIG
 
   return (
     <span
-      className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium ${style}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium ${config.color}`}
     >
+      <span className={`h-1.5 w-1.5 rounded-full ${config.dot}`} />
       {status}
     </span>
   )

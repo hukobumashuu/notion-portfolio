@@ -16,33 +16,80 @@ export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProp
   const { triggerSave } = useSaveStatus()
 
   if (!isEditing && collection.projects.length === 0) return null
+
   return (
-    <section>
-      {/* Collection title */}
-      <h2 className="text-text-primary text-lg font-semibold">
+    <section className="w-full">
+      {/* Section Header */}
+      <div className="mb-6 flex items-center gap-3">
+        <div className="border-surface-border bg-surface-card flex h-5 w-5 shrink-0 items-center justify-center rounded border">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <rect
+              x="0"
+              y="0"
+              width="4"
+              height="4"
+              fill="currentColor"
+              className="text-text-muted"
+              rx="0.5"
+            />
+            <rect
+              x="6"
+              y="0"
+              width="4"
+              height="4"
+              fill="currentColor"
+              className="text-text-muted"
+              rx="0.5"
+            />
+            <rect
+              x="0"
+              y="6"
+              width="4"
+              height="4"
+              fill="currentColor"
+              className="text-text-muted"
+              rx="0.5"
+            />
+            <rect
+              x="6"
+              y="6"
+              width="4"
+              height="4"
+              fill="currentColor"
+              className="text-text-muted"
+              rx="0.5"
+            />
+          </svg>
+        </div>
+
         <EditableText
           as="span"
           value={collection.title}
           onSave={(val) => triggerSave(() => updateCollection(collection.id, val))}
           isEditing={isEditing}
           singleLine
+          className="text-text-primary shrink-0 text-sm font-semibold tracking-wide uppercase"
           placeholder="Section title..."
         />
-      </h2>
 
-      {/* Card grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="border-surface-border flex-1 border-t" />
+      </div>
+
+      {/* RESTORED: Standard Notion 3-Column Grid! */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {collection.projects.map((project) => (
-          <ProjectCard key={project.id} project={project} isEditing={isEditing} />
+          <div key={project.id} className="h-full">
+            <ProjectCard project={project} isEditing={isEditing} />
+          </div>
         ))}
 
-        {/* Always show the add button in edit mode, even if there are 0 projects */}
         {isEditing && (
-          <AddProjectCard collectionId={collection.id} position={collection.projects.length} />
+          <div className="h-full">
+            <AddProjectCard collectionId={collection.id} position={collection.projects.length} />
+          </div>
         )}
       </div>
 
-      {/* Show the text ONLY if it's the public page and empty (though the early return above makes this technically optional now!) */}
       {!isEditing && collection.projects.length === 0 && (
         <p className="text-text-muted mt-4 text-sm">No projects yet.</p>
       )}

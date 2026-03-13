@@ -1,6 +1,5 @@
 'use client'
 
-// ✅ 1. Added useRef to the React imports
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import type { ContentBlock, ContentBlockType, Project, ToolTag } from '@/lib/types'
@@ -48,10 +47,8 @@ export function ProjectModal({
   const [localStatus] = useState(project.status)
   const [localDuration, setLocalDuration] = useState(project.duration)
 
-  // ✅ 2. Create a ref for the modal container
   const modalRef = useRef<HTMLDivElement>(null)
 
-  // Fetch blocks when modal opens
   useEffect(() => {
     if (!isOpen) return
 
@@ -70,7 +67,6 @@ export function ProjectModal({
     loadBlocks()
   }, [isOpen, project.id])
 
-  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -80,7 +76,6 @@ export function ProjectModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen])
 
-  // ✅ 3. Auto-focus the modal when it opens for screen readers & keyboard nav (S5-06)
   useEffect(() => {
     if (!isOpen) return
     modalRef.current?.focus()
@@ -88,7 +83,6 @@ export function ProjectModal({
 
   async function handleAddBlock(type: ContentBlockType) {
     await addContentBlock(project.id, type, blocks.length)
-    // Refetch inline — not via shared loadBlocks to keep it out of effect deps
     const supabase = createBrowserClient()
     const { data } = await supabase
       .from('content_blocks')
@@ -105,16 +99,13 @@ export function ProjectModal({
 
   return (
     <>
-      {/* Trigger */}
       <div onClick={() => setIsOpen(true)}>{children}</div>
 
-      {/* Modal overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-0 py-0 backdrop-blur-sm sm:items-center sm:px-4 sm:py-8"
           onClick={(e) => e.target === e.currentTarget && setIsOpen(false)}
         >
-          {/* ✅ 4. Added ref, tabIndex, role, aria tags, and focus:outline-none (S5-06) */}
           <div
             ref={modalRef}
             tabIndex={-1}
@@ -123,7 +114,6 @@ export function ProjectModal({
             aria-label={project.title}
             className="bg-surface-modal sm:rounded-card sm:border-surface-border relative flex h-full w-full flex-col overflow-hidden border-0 shadow-2xl focus:outline-none sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:border"
           >
-            {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
               className="text-text-muted hover:bg-surface-border hover:text-text-primary absolute top-4 right-4 z-10 flex h-7 w-7 items-center justify-center rounded-md transition-colors"
@@ -132,9 +122,7 @@ export function ProjectModal({
               ✕
             </button>
 
-            {/* Scrollable content */}
             <div className="overflow-y-auto">
-              {/* Cover image */}
               {project.thumbnail_url && (
                 <div className="bg-surface relative h-48 w-full shrink-0">
                   <Image
@@ -143,7 +131,6 @@ export function ProjectModal({
                     fill
                     className="object-cover"
                     sizes="672px"
-                    // ✅ 5. Hide broken image icon if the URL fails to load (S5-09)
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
                     }}
@@ -152,16 +139,15 @@ export function ProjectModal({
               )}
 
               <div className="p-8">
-                {/* Title */}
                 <div className="mb-6 flex items-center gap-3">
                   <span className="text-3xl">{project.emoji ?? '📄'}</span>
                   <h2 className="text-text-primary text-2xl font-bold">{project.title}</h2>
                 </div>
 
-                {/* Metadata rows */}
                 <div className="mb-8 space-y-3">
+                  {/* ✅ Added icon="⊞" */}
                   {(localToolTags.length > 0 || isEditing) && (
-                    <MetaRow label="Tools Used">
+                    <MetaRow label="Tools Used" icon="⊞">
                       {isEditing ? (
                         <TagEditor
                           tags={localToolTags}
@@ -185,8 +171,9 @@ export function ProjectModal({
                     </MetaRow>
                   )}
 
+                  {/* ✅ Added icon="◈" */}
                   {(localSectorTags.length > 0 || isEditing) && (
-                    <MetaRow label="Sector">
+                    <MetaRow label="Sector" icon="◈">
                       {isEditing ? (
                         <TagEditor
                           tags={localSectorTags.map((label) => ({ label }))}
@@ -210,16 +197,19 @@ export function ProjectModal({
                     </MetaRow>
                   )}
 
+                  {/* ✅ Added icon="◎" */}
                   {localStatus && (
-                    <MetaRow label="Status">
+                    <MetaRow label="Status" icon="◎">
                       <StatusBadge status={localStatus} />
                     </MetaRow>
                   )}
 
+                  {/* ✅ Added icon="⏱" */}
                   {(localDuration || isEditing) && (
-                    <MetaRow label="Duration">
+                    <MetaRow label="Duration" icon="⏱">
                       <EditableText
-                        as="span"
+                        // ✅ Changed from "span" to "div"
+                        as="p"
                         value={localDuration ?? ''}
                         onSave={(val) => {
                           setLocalDuration(val)
@@ -228,17 +218,16 @@ export function ProjectModal({
                         }}
                         isEditing={isEditing}
                         singleLine
-                        className="text-text-primary text-sm"
+                        // ✅ Added "w-full" so the entire row is clickable
+                        className="text-text-primary w-full text-sm"
                         placeholder="e.g. 10 weeks"
                       />
                     </MetaRow>
                   )}
                 </div>
 
-                {/* Divider */}
                 <hr className="border-surface-border mb-8" />
 
-                {/* Content blocks */}
                 {isLoadingBlocks ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map((i) => (
@@ -246,7 +235,8 @@ export function ProjectModal({
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  // ✅ Changed space-y-4 to space-y-5
+                  <div className="space-y-5">
                     {blocks.map((block) => (
                       <ContentBlockRenderer
                         key={block.id}
@@ -256,7 +246,6 @@ export function ProjectModal({
                       />
                     ))}
 
-                    {/* ── Add block picker (editor only) ── */}
                     {isEditing && (
                       <div className="border-surface-border mt-4 flex flex-wrap gap-2 border-t pt-4">
                         {BLOCK_TYPES.map(({ type, label, icon }) => (
@@ -282,12 +271,21 @@ export function ProjectModal({
   )
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
+function MetaRow({
+  label,
+  icon,
+  children,
+}: {
+  label: string
+  icon: string
+  children: React.ReactNode
+}) {
   return (
-    <div className="flex items-start gap-4">
-      <span className="text-text-muted w-24 shrink-0 text-sm">{label}</span>
+    <div className="flex items-start gap-3">
+      <div className="flex w-28 shrink-0 items-center gap-2">
+        <span className="text-text-muted text-xs">{icon}</span>
+        <span className="text-text-muted text-xs">{label}</span>
+      </div>
       <div className="flex-1">{children}</div>
     </div>
   )
@@ -318,8 +316,8 @@ function ContentBlockRenderer({
     switch (block.type) {
       case 'heading':
         return (
-          <h3 className="text-teal flex items-center gap-2 text-lg font-semibold">
-            <span>✳</span>
+          <h3 className="text-teal flex items-center gap-2 pt-2 text-base font-semibold">
+            <span className="text-teal opacity-70">✳</span>
             <EditableText
               {...editableProps}
               as="span"
@@ -343,13 +341,13 @@ function ContentBlockRenderer({
           <EditableText
             {...editableProps}
             as="p"
-            className="text-text-muted text-sm leading-relaxed"
+            className="text-text-muted text-[14px] leading-7"
             placeholder="Write something..."
           />
         )
       case 'blockquote':
         return (
-          <blockquote className="border-teal border-l-2 pl-4">
+          <blockquote className="border-teal bg-teal/5 rounded-r-md border-l-[3px] py-2 pl-4">
             <EditableText
               {...editableProps}
               as="p"
