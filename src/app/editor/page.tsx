@@ -23,7 +23,7 @@ export default async function EditorPage() {
       <EditorSaveBar />
       <main className="mx-auto max-w-4xl space-y-16 px-6 pt-20 pb-16">
         <HeroSection profile={profile} isEditing={true} />
-        <div className="space-y-16">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
           {collections.map((collection: Collection & { projects: Project[] }) => (
             <ProjectsGrid key={collection.id} collection={collection} isEditing={true} />
           ))}

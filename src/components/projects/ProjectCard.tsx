@@ -21,14 +21,20 @@ interface ProjectCardProps {
   isEditing?: boolean
 }
 
-export function ProjectCard({ project, isEditing = false }: ProjectCardProps) {
+export function ProjectCard({ project: initialProject, isEditing = false }: ProjectCardProps) {
   const { triggerSave } = useSaveStatus()
   const [showConfirm, setShowConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
+  const [project, setProject] = useState(initialProject)
+
+  function handleProjectUpdate(fields: Partial<Project>) {
+    setProject((prev) => ({ ...prev, ...fields }))
+  }
 
   function handleSave(field: 'title' | 'emoji' | 'status') {
     return (value: string) => {
+      setProject((prev) => ({ ...prev, [field]: value }))
       triggerSave(() => updateProject(project.id, { [field]: value }))
     }
   }
@@ -45,7 +51,7 @@ export function ProjectCard({ project, isEditing = false }: ProjectCardProps) {
   }
 
   return (
-    <ProjectModal project={project} isEditing={isEditing}>
+    <ProjectModal project={project} isEditing={isEditing} onProjectUpdate={handleProjectUpdate}>
       <div className="group rounded-card border-surface-border bg-surface-card hover:border-teal/40 cursor-pointer border transition-colors">
         {/* Thumbnail */}
 
@@ -89,6 +95,9 @@ export function ProjectCard({ project, isEditing = false }: ProjectCardProps) {
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, 33vw"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+              }}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">

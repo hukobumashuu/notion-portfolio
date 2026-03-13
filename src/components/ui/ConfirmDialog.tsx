@@ -23,7 +23,12 @@ export function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-      <div className="rounded-card border-surface-border bg-surface-card w-full max-w-sm border p-6 shadow-2xl">
+      <div
+        className="rounded-card border-surface-border bg-surface-card w-full max-w-sm border p-6 shadow-2xl"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+      >
         <h3 className="text-text-primary text-base font-semibold">{title}</h3>
         <p className="text-text-muted mt-2 text-sm">{description}</p>
         <div className="mt-6 flex justify-end gap-3">

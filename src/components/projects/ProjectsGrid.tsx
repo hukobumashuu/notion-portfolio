@@ -14,6 +14,8 @@ interface ProjectsGridProps {
 
 export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProps) {
   const { triggerSave } = useSaveStatus()
+
+  if (!isEditing && collection.projects.length === 0) return null
   return (
     <section>
       {/* Collection title */}
@@ -29,17 +31,20 @@ export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProp
       </h2>
 
       {/* Card grid */}
-      {collection.projects.length === 0 ? (
-        <p className="text-text-muted text-sm">No projects yet.</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {collection.projects.map((project) => (
-            <ProjectCard key={project.id} project={project} isEditing={isEditing} />
-          ))}
-          {isEditing && (
-            <AddProjectCard collectionId={collection.id} position={collection.projects.length} />
-          )}
-        </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {collection.projects.map((project) => (
+          <ProjectCard key={project.id} project={project} isEditing={isEditing} />
+        ))}
+
+        {/* Always show the add button in edit mode, even if there are 0 projects */}
+        {isEditing && (
+          <AddProjectCard collectionId={collection.id} position={collection.projects.length} />
+        )}
+      </div>
+
+      {/* Show the text ONLY if it's the public page and empty (though the early return above makes this technically optional now!) */}
+      {!isEditing && collection.projects.length === 0 && (
+        <p className="text-text-muted mt-4 text-sm">No projects yet.</p>
       )}
     </section>
   )

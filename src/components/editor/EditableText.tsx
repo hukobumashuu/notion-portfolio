@@ -75,6 +75,7 @@ export function EditableText({
         'transition-colors duration-150',
         'empty:before:text-text-muted empty:before:pointer-events-none empty:before:content-[attr(data-placeholder)]',
       )}
+      aria-label={`Edit ${placeholder}`}
     />
   )
 }

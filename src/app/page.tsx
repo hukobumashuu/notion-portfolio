@@ -3,6 +3,30 @@ import type { Collection, Project } from '@/lib/types'
 import { getCollectionsWithProjects, getProfile } from '@/lib/supabase/queries'
 import { HeroSection } from '@/components/profile'
 import { ProjectsGrid } from '@/components/projects'
+import type { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const profile = await getProfile()
+
+  const title = profile?.name ?? 'Portfolio'
+  const description = profile?.bio ? `${profile.role} — ${profile.bio}` : 'Personal portfolio'
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: profile?.avatar_url ? [{ url: profile.avatar_url, width: 400, height: 400 }] : [],
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
+  }
+}
 
 export const revalidate = 60
 
@@ -15,7 +39,7 @@ export default async function PublicPage() {
   return (
     <SaveStatusProvider>
       <main className="bg-surface min-h-screen">
-        <div className="mx-auto max-w-5xl px-6 py-16">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
           <HeroSection profile={profile} />
 
           <div className="mt-20 space-y-16">

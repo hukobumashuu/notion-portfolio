@@ -27,7 +27,7 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
   }
 
   return (
-    <section className="flex items-start gap-6">
+    <section className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
       {/* Avatar */}
       <div className="bg-surface-card relative h-20 w-20 shrink-0 overflow-hidden rounded-full">
         {isEditing ? (

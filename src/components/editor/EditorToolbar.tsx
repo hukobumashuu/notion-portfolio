@@ -10,8 +10,8 @@ export function EditorToolbar({ saveStatus }: EditorToolbarProps) {
   return (
     <div className="border-surface-border bg-surface-card/90 fixed top-0 right-0 left-0 z-40 flex h-10 items-center justify-between border-b px-6 backdrop-blur-sm">
       <div className="flex items-center gap-2">
-        <span className="text-amber-portfolio text-xs font-medium">✎ Editing</span>
-        <span className="text-surface-border">·</span>
+        <span className="text-amber-portfolio hidden text-xs font-medium sm:inline">✎ Editing</span>
+        <span className="text-amber-portfolio text-xs font-medium sm:hidden">✎</span>
         <SaveIndicator status={saveStatus} />
       </div>
 

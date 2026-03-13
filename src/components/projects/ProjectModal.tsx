@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+// ✅ 1. Added useRef to the React imports
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import type { ContentBlock, ContentBlockType, Project, ToolTag } from '@/lib/types'
 import { TagPill } from '@/components/ui/TagPill'
@@ -21,6 +22,7 @@ interface ProjectModalProps {
   project: Project
   isEditing?: boolean
   children: React.ReactNode
+  onProjectUpdate?: (fields: Partial<Project>) => void
 }
 
 const BLOCK_TYPES: { type: ContentBlockType; label: string; icon: string }[] = [
@@ -30,7 +32,12 @@ const BLOCK_TYPES: { type: ContentBlockType; label: string; icon: string }[] = [
   { type: 'blockquote', label: 'Quote', icon: '"' },
 ]
 
-export function ProjectModal({ project, isEditing = false, children }: ProjectModalProps) {
+export function ProjectModal({
+  project,
+  isEditing = false,
+  children,
+  onProjectUpdate,
+}: ProjectModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
   const [isLoadingBlocks, setIsLoadingBlocks] = useState(false)
@@ -40,6 +47,9 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
   const [localSectorTags, setLocalSectorTags] = useState(project.sector_tags)
   const [localStatus] = useState(project.status)
   const [localDuration, setLocalDuration] = useState(project.duration)
+
+  // ✅ 2. Create a ref for the modal container
+  const modalRef = useRef<HTMLDivElement>(null)
 
   // Fetch blocks when modal opens
   useEffect(() => {
@@ -70,6 +80,12 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen])
 
+  // ✅ 3. Auto-focus the modal when it opens for screen readers & keyboard nav (S5-06)
+  useEffect(() => {
+    if (!isOpen) return
+    modalRef.current?.focus()
+  }, [isOpen])
+
   async function handleAddBlock(type: ContentBlockType) {
     await addContentBlock(project.id, type, blocks.length)
     // Refetch inline — not via shared loadBlocks to keep it out of effect deps
@@ -95,10 +111,18 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
       {/* Modal overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-0 py-0 backdrop-blur-sm sm:items-center sm:px-4 sm:py-8"
           onClick={(e) => e.target === e.currentTarget && setIsOpen(false)}
         >
-          <div className="rounded-card border-surface-border bg-surface-modal relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden border shadow-2xl">
+          {/* ✅ 4. Added ref, tabIndex, role, aria tags, and focus:outline-none (S5-06) */}
+          <div
+            ref={modalRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-label={project.title}
+            className="bg-surface-modal sm:rounded-card sm:border-surface-border relative flex h-full w-full flex-col overflow-hidden border-0 shadow-2xl focus:outline-none sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:border"
+          >
             {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
@@ -119,6 +143,10 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
                     fill
                     className="object-cover"
                     sizes="672px"
+                    // ✅ 5. Hide broken image icon if the URL fails to load (S5-09)
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
                   />
                 </div>
               )}
@@ -140,7 +168,8 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
                           withColor
                           placeholder="Add tool..."
                           onChange={(tags) => {
-                            setLocalToolTags(tags as ToolTag[]) // ✅ instant UI update
+                            setLocalToolTags(tags as ToolTag[])
+                            onProjectUpdate?.({ tool_tags: tags as ToolTag[] })
                             triggerSave(() =>
                               updateProject(project.id, { tool_tags: tags as ToolTag[] }),
                             )
@@ -164,7 +193,8 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
                           withColor={false}
                           placeholder="Add sector..."
                           onChange={(tags) => {
-                            setLocalSectorTags(tags.map((t) => t.label)) // ✅ instant UI update
+                            setLocalSectorTags(tags.map((t) => t.label))
+                            onProjectUpdate?.({ sector_tags: tags.map((t) => t.label) })
                             triggerSave(() =>
                               updateProject(project.id, { sector_tags: tags.map((t) => t.label) }),
                             )
@@ -192,7 +222,8 @@ export function ProjectModal({ project, isEditing = false, children }: ProjectMo
                         as="span"
                         value={localDuration ?? ''}
                         onSave={(val) => {
-                          setLocalDuration(val) // ✅ instant UI update
+                          setLocalDuration(val)
+                          onProjectUpdate?.({ duration: val })
                           triggerSave(() => updateProject(project.id, { duration: val }))
                         }}
                         isEditing={isEditing}

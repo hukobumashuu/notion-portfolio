@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/lib/context/ToastContext'
 
 interface ImageUploadProps {
   bucket: 'thumbnails' | 'avatars'
@@ -42,6 +43,7 @@ async function compressImage(file: File): Promise<Blob> {
 export function ImageUpload({ bucket, path, onUpload, children, className }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const { showToast } = useToast()
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -63,8 +65,10 @@ export function ImageUpload({ bucket, path, onUpload, children, className }: Ima
 
       const { data } = supabase.storage.from(bucket).getPublicUrl(fileName)
       onUpload(data.publicUrl)
+      showToast('Image uploaded successfully', 'success')
     } catch (err) {
-      console.error('Upload failed:', err)
+      const message = err instanceof Error ? err.message : 'Upload failed'
+      showToast(message, 'error')
     } finally {
       setIsUploading(false)
       // Reset input so same file can be re-uploaded
