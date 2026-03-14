@@ -1,5 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import type { Profile, Collection, Project } from '@/lib/types'
+import type { Profile, Collection, Project, Page } from '@/lib/types'
 
 export async function getProfile(): Promise<Profile | null> {
   const supabase = await createServerClient()
@@ -19,4 +19,10 @@ export async function getCollectionsWithProjects(): Promise<
     .order('position', { referencedTable: 'projects' })
 
   return (data ?? []) as Array<Collection & { projects: Project[] }>
+}
+
+export async function getPage(slug: string): Promise<Page | null> {
+  const supabase = await createServerClient()
+  const { data } = await supabase.from('pages').select('*').eq('slug', slug).limit(1).maybeSingle()
+  return data as Page | null
 }

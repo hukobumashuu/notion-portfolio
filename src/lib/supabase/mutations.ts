@@ -126,3 +126,11 @@ export async function deleteCollection(id: string): Promise<void> {
   if (error) throw new Error(error.message)
   await revalidatePublicPage()
 }
+
+// --- Pages (BlockNote) ---
+export async function updatePage(slug: string, content: unknown): Promise<void> {
+  const supabase = getClient()
+  const { error } = await supabase.from('pages').update({ content }).eq('slug', slug)
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}

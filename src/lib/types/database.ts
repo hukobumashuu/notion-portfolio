@@ -21,6 +21,21 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['profile']['Row'], 'id' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['profile']['Insert']>
       }
+      pages: {
+        Row: {
+          id: string
+          slug: string
+          title: string
+          content: unknown
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<
+          Database['public']['Tables']['pages']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >
+        Update: Partial<Database['public']['Tables']['pages']['Insert']>
+      }
       collections: {
         Row: {
           id: string
@@ -68,3 +83,4 @@ export type Profile = Database['public']['Tables']['profile']['Row']
 export type Collection = Database['public']['Tables']['collections']['Row']
 export type Project = Database['public']['Tables']['projects']['Row']
 export type ContentBlock = Database['public']['Tables']['content_blocks']['Row']
+export type Page = Database['public']['Tables']['pages']['Row']

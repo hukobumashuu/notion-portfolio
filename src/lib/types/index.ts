@@ -6,4 +6,5 @@ export type {
   ContentBlock,
   ToolTag,
   ContentBlockType,
+  Page,
 } from './database'

@@ -1,12 +1,18 @@
 'use client'
 
+import { useState, useMemo } from 'react'
 import type { Collection, Project } from '@/lib/types'
 import { ProjectCard } from './ProjectCard'
 import { AddProjectCard } from './AddProjectCard'
 import { EditableText } from '@/components/editor/EditableText'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
-import { updateCollection } from '@/lib/supabase/mutations'
-import { useRef, useEffect, useState } from 'react'
+import { updateCollection, deleteCollection } from '@/lib/supabase/mutations'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
+
+const STATUS_OPTIONS = ['All', 'In Progress', 'Done', 'On Hold', 'Archived']
+type SortOption = 'manual' | 'title_asc' | 'title_desc'
 
 interface ProjectsGridProps {
   collection: Collection & { projects: Project[] }
@@ -15,86 +21,64 @@ interface ProjectsGridProps {
 
 export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProps) {
   const { triggerSave } = useSaveStatus()
+  const router = useRouter()
 
-  // Interaction Refs
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const isDown = useRef(false)
-  const startX = useRef(0)
-  const scrollLeftPos = useRef(0)
+  // --- Deletion States ---
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  // State to prevent accidental clicks when dragging
-  const [isDragging, setIsDragging] = useState(false)
+  // --- Database Control States ---
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [filterStatus, setFilterStatus] = useState<string>('All')
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>('manual')
+  const [isSortOpen, setIsSortOpen] = useState(false)
 
-  // Enables Mouse Wheel vertical-to-horizontal scrolling
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
+  async function handleDelete() {
+    setIsDeleting(true)
+    try {
+      await deleteCollection(collection.id)
+      router.refresh()
+    } finally {
+      setIsDeleting(false)
+      setShowConfirm(false)
+    }
+  }
 
-    const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY !== 0 && e.deltaX === 0) {
-        e.preventDefault()
-        el.scrollBy({ left: e.deltaY > 0 ? 100 : -100, behavior: 'auto' })
-      }
+  // --- Local Filtering & Sorting Magic ---
+  const displayProjects = useMemo(() => {
+    let result = [...collection.projects]
+
+    // 1. Apply Status Filter
+    if (filterStatus !== 'All') {
+      result = result.filter((p) => p.status === filterStatus)
     }
 
-    el.addEventListener('wheel', handleWheel, { passive: false })
-    return () => el.removeEventListener('wheel', handleWheel)
-  }, [])
-
-  // Drag-to-Scroll Handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    isDown.current = true
-    if (!scrollRef.current) return
-    startX.current = e.pageX - scrollRef.current.offsetLeft
-    scrollLeftPos.current = scrollRef.current.scrollLeft
-    scrollRef.current.style.cursor = 'grabbing'
-    scrollRef.current.style.scrollBehavior = 'auto' // Remove smooth for 1:1 drag
-  }
-
-  const handleMouseLeave = () => {
-    isDown.current = false
-    setIsDragging(false)
-    if (!scrollRef.current) return
-    scrollRef.current.style.cursor = 'grab'
-    scrollRef.current.style.scrollBehavior = 'smooth'
-  }
-
-  const handleMouseUp = () => {
-    isDown.current = false
-    if (!scrollRef.current) return
-    scrollRef.current.style.cursor = 'grab'
-    scrollRef.current.style.scrollBehavior = 'smooth'
-    setTimeout(() => setIsDragging(false), 50) // Delay to allow drag to finish before clicks register
-  }
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDown.current || !scrollRef.current) return
-    e.preventDefault()
-    const x = e.pageX - scrollRef.current.offsetLeft
-    const walk = (x - startX.current) * 2 // Scroll speed multiplier
-
-    // If they move more than 5px, register it as a drag (disables clicks)
-    if (Math.abs(walk) > 5 && !isDragging) {
-      setIsDragging(true)
+    // 2. Apply Text Search
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase()
+      result = result.filter((p) => p.title.toLowerCase().includes(lowerQuery))
     }
 
-    scrollRef.current.scrollLeft = scrollLeftPos.current - walk
-  }
+    // 3. Apply Sorting
+    if (sortBy === 'title_asc') {
+      result.sort((a, b) => a.title.localeCompare(b.title))
+    } else if (sortBy === 'title_desc') {
+      result.sort((a, b) => b.title.localeCompare(a.title))
+    } else {
+      result.sort((a, b) => a.position - b.position) // Default manual order
+    }
 
-  // Button Handlers
-  function scrollLeftBtn() {
-    scrollRef.current?.scrollBy({ left: -300, behavior: 'smooth' })
-  }
-  function scrollRightBtn() {
-    scrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' })
-  }
+    return result
+  }, [collection.projects, filterStatus, searchQuery, sortBy])
 
   if (!isEditing && collection.projects.length === 0) return null
 
   return (
     <section className="w-full">
-      {/* Section Header */}
-      <div className="mb-6 flex items-center gap-3">
+      {/* --- Section Header --- */}
+      <div className="group/header mb-4 flex flex-wrap items-center gap-3">
         <div className="border-surface-border bg-surface-card flex h-5 w-5 shrink-0 items-center justify-center rounded border">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <rect
@@ -148,61 +132,165 @@ export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProp
 
         <div className="border-surface-border flex-1 border-t" />
 
-        {/* Scroll buttons — visible on desktop */}
-        {!isEditing && collection.projects.length > 0 && (
-          <div className="flex shrink-0 gap-1">
+        {/* --- Database Controls (Filter/Sort/Search) --- */}
+        <div className="text-text-muted flex items-center gap-1 text-sm">
+          {/* Filter Dropdown */}
+          <div className="relative">
             <button
-              onClick={scrollLeftBtn}
-              className="border-surface-border text-text-muted hover:border-teal hover:text-teal flex h-6 w-6 items-center justify-center rounded-md border text-xs transition-colors"
+              onClick={() => {
+                setIsFilterOpen(!isFilterOpen)
+                setIsSortOpen(false)
+              }}
+              className={cn(
+                'hover:bg-surface-border/50 flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors',
+                filterStatus !== 'All' && 'bg-teal/10 text-teal hover:bg-teal/20',
+              )}
             >
-              ←
+              <span>{filterStatus !== 'All' ? `Status: ${filterStatus}` : 'Filter'}</span>
             </button>
+            {isFilterOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
+                <div className="bg-surface-card border-surface-border absolute top-full right-0 z-20 mt-1 w-32 rounded-md border p-1 shadow-lg">
+                  {STATUS_OPTIONS.map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        setFilterStatus(status)
+                        setIsFilterOpen(false)
+                      }}
+                      className="text-text-primary hover:bg-surface-border/50 block w-full rounded px-2 py-1.5 text-left text-xs transition-colors"
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="relative">
             <button
-              onClick={scrollRightBtn}
-              className="border-surface-border text-text-muted hover:border-teal hover:text-teal flex h-6 w-6 items-center justify-center rounded-md border text-xs transition-colors"
+              onClick={() => {
+                setIsSortOpen(!isSortOpen)
+                setIsFilterOpen(false)
+              }}
+              className={cn(
+                'hover:bg-surface-border/50 flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors',
+                sortBy !== 'manual' && 'bg-teal/10 text-teal hover:bg-teal/20',
+              )}
             >
-              →
+              <span>
+                {sortBy === 'title_asc'
+                  ? 'Sort: A-Z'
+                  : sortBy === 'title_desc'
+                    ? 'Sort: Z-A'
+                    : 'Sort'}
+              </span>
             </button>
+            {isSortOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsSortOpen(false)} />
+                <div className="bg-surface-card border-surface-border absolute top-full right-0 z-20 mt-1 w-32 rounded-md border p-1 shadow-lg">
+                  {[
+                    { label: 'Manual', value: 'manual' },
+                    { label: 'Title (A-Z)', value: 'title_asc' },
+                    { label: 'Title (Z-A)', value: 'title_desc' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value as SortOption)
+                        setIsSortOpen(false)
+                      }}
+                      className="text-text-primary hover:bg-surface-border/50 block w-full rounded px-2 py-1.5 text-left text-xs transition-colors"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Search Toggle */}
+          {isSearchOpen ? (
+            <div className="border-surface-border bg-surface flex items-center gap-1.5 rounded-md border px-2 py-1">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor">
+                <path d="M5.5 0a5.5 5.5 0 1 0 3.32 9.8l3.47 3.47.71-.7-3.47-3.47A5.5 5.5 0 0 0 5.5 0zm0 1a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z" />
+              </svg>
+              <input
+                autoFocus
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onBlur={() => {
+                  if (!searchQuery) setIsSearchOpen(false)
+                }}
+                placeholder="Search..."
+                className="text-text-primary w-24 bg-transparent text-xs outline-none"
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="hover:bg-surface-border/50 flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <path d="M5.5 0a5.5 5.5 0 1 0 3.32 9.8l3.47 3.47.71-.7-3.47-3.47A5.5 5.5 0 0 0 5.5 0zm0 1a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Delete Section Button (Hidden until hover) */}
+        {isEditing && (
+          <button
+            onClick={() => setShowConfirm(true)}
+            className="border-surface-border ml-2 flex h-6 w-6 items-center justify-center rounded-md border text-xs opacity-0 transition-opacity group-hover/header:opacity-100 hover:border-red-400 hover:text-red-400"
+            aria-label="Delete section"
+          >
+            🗑
+          </button>
+        )}
+      </div>
+
+      {/* --- Projects Grid --- */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {displayProjects.map((project) => (
+          <div key={project.id} className="h-full">
+            <ProjectCard project={project} isEditing={isEditing} />
+          </div>
+        ))}
+
+        {/* Only allow adding new projects if we aren't currently searching/filtering */}
+        {isEditing && filterStatus === 'All' && !searchQuery && (
+          <div className="h-full">
+            <AddProjectCard collectionId={collection.id} position={collection.projects.length} />
           </div>
         )}
       </div>
 
-      {/* Horizontal Carousel */}
-      <div className="group relative">
-        {/* Fade-out hint on right edge */}
-        <div className="from-surface pointer-events-none absolute top-0 right-0 z-10 h-full w-24 bg-linear-to-l to-transparent" />
+      {/* Empty State when filters are too strict */}
+      {collection.projects.length > 0 && displayProjects.length === 0 && (
+        <p className="text-text-muted mt-4 text-sm">No results</p>
+      )}
 
-        <div
-          ref={scrollRef}
-          onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeave}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-          className="flex cursor-grab snap-x snap-mandatory gap-4 overflow-x-auto pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          style={{ scrollBehavior: 'smooth' }}
-        >
-          {collection.projects.map((project) => (
-            <div
-              key={project.id}
-              className={`h-95 w-70 shrink-0 snap-start ${isDragging ? 'pointer-events-none' : ''}`}
-            >
-              <ProjectCard project={project} isEditing={isEditing} />
-            </div>
-          ))}
-
-          {isEditing && (
-            <div
-              className={`h-95 w-70 shrink-0 snap-start ${isDragging ? 'pointer-events-none' : ''}`}
-            >
-              <AddProjectCard collectionId={collection.id} position={collection.projects.length} />
-            </div>
-          )}
-        </div>
-      </div>
-
+      {/* Empty State when zero projects exist */}
       {!isEditing && collection.projects.length === 0 && (
         <p className="text-text-muted mt-4 text-sm">No projects yet.</p>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showConfirm}
+        title="Delete section?"
+        description={`"${collection.title}" and all projects inside it will be permanently deleted.`}
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirm(false)}
+        isLoading={isDeleting}
+      />
     </section>
   )
 }
