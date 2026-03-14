@@ -21,12 +21,12 @@ export default async function EditorPage() {
   return (
     <SaveStatusProvider>
       <EditorSaveBar />
-      <main className="bg-surface relative z-10 min-h-screen pt-16">
-        {/* MATCHES PUBLIC PAGE EXACTLY */}
-        <div className="mx-auto w-full max-w-5xl px-6 py-16 sm:px-10">
+      {/* pt-14 exists here strictly to clear the sticky EditorSaveBar */}
+      <main className="bg-surface relative z-10 min-h-screen pt-14">
+        <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
           <HeroSection profile={profile} isEditing={true} />
 
-          <div className="mt-24 space-y-20">
+          <div className="mt-20 space-y-16">
             {collections.map((collection: Collection & { projects: Project[] }) => (
               <ProjectsGrid key={collection.id} collection={collection} isEditing={true} />
             ))}

@@ -19,7 +19,7 @@ export async function revalidatePublicPage(): Promise<void> {
 
 // ─── Profile ──────────────────────────────────────────────────────────────────
 
-type ProfileUpdate = Partial<Pick<Profile, 'name' | 'role' | 'bio' | 'avatar_url'>>
+type ProfileUpdate = Partial<Pick<Profile, 'name' | 'role' | 'bio' | 'avatar_url' | 'cover_url'>>
 
 export async function updateProfile(id: string, fields: ProfileUpdate): Promise<void> {
   const supabase = getClient()
@@ -116,6 +116,13 @@ export async function updateCollection(id: string, title: string): Promise<void>
 export async function addCollection(position: number): Promise<void> {
   const supabase = getClient()
   const { error } = await supabase.from('collections').insert({ title: 'New Section', position })
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}
+
+export async function deleteCollection(id: string): Promise<void> {
+  const supabase = getClient()
+  const { error } = await supabase.from('collections').delete().eq('id', id)
   if (error) throw new Error(error.message)
   await revalidatePublicPage()
 }

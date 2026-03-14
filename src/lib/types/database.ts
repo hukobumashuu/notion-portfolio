@@ -16,6 +16,7 @@ export interface Database {
           bio: string | null
           avatar_url: string | null
           updated_at: string
+          cover_url: string | null
         }
         Insert: Omit<Database['public']['Tables']['profile']['Row'], 'id' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['profile']['Insert']>

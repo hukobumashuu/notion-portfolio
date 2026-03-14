@@ -99,7 +99,9 @@ export function ProjectModal({
 
   return (
     <>
-      <div onClick={() => setIsOpen(true)}>{children}</div>
+      <div className="h-full w-full" onClick={() => setIsOpen(true)}>
+        {children}
+      </div>
 
       {isOpen && (
         <div

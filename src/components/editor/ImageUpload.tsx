@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { useToast } from '@/lib/context/ToastContext'
 
 interface ImageUploadProps {
-  bucket: 'thumbnails' | 'avatars'
+  bucket: 'thumbnails' | 'avatars' | 'covers'
   path: string // e.g. project.id or 'avatar'
   onUpload: (url: string) => void
   children: React.ReactNode // The visible trigger UI
