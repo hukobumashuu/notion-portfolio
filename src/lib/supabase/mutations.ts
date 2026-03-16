@@ -19,7 +19,9 @@ export async function revalidatePublicPage(): Promise<void> {
 
 // ─── Profile ──────────────────────────────────────────────────────────────────
 
-type ProfileUpdate = Partial<Pick<Profile, 'name' | 'role' | 'bio' | 'avatar_url' | 'cover_url'>>
+type ProfileUpdate = Partial<
+  Pick<Profile, 'name' | 'role' | 'bio' | 'avatar_url' | 'cover_url' | 'custom_links'>
+>
 
 export async function updateProfile(id: string, fields: ProfileUpdate): Promise<void> {
   const supabase = getClient()
@@ -128,9 +130,61 @@ export async function deleteCollection(id: string): Promise<void> {
 }
 
 // --- Pages (BlockNote) ---
+
 export async function updatePage(slug: string, content: unknown): Promise<void> {
   const supabase = getClient()
   const { error } = await supabase.from('pages').update({ content }).eq('slug', slug)
   if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}
+
+export async function updatePageTitle(slug: string, title: string): Promise<void> {
+  const supabase = getClient()
+  const { error } = await supabase.from('pages').update({ title }).eq('slug', slug)
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}
+
+export async function addPage(): Promise<string> {
+  const supabase = getClient()
+  const newSlug = `untitled-${Date.now()}` // Generate a simple unique slug
+  const { error } = await supabase
+    .from('pages')
+    .insert({ slug: newSlug, title: 'Untitled Page', content: [] })
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+  return newSlug
+}
+
+export async function deletePage(slug: string): Promise<void> {
+  const supabase = getClient()
+  // ✅ Added safety check: only delete if is_protected is false or null
+  const { error } = await supabase.from('pages').delete().match({ slug, is_protected: false })
+  if (error) throw new Error(error.message)
+  await revalidatePublicPage()
+}
+
+export async function updatePageSlug(oldSlug: string, newSlug: string): Promise<void> {
+  const supabase = getClient()
+
+  // Sanitize the slug (lowercase, replace spaces with hyphens, remove special chars)
+  const sanitizedSlug = newSlug
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
+
+  if (sanitizedSlug === oldSlug) return // No change needed
+  if (!sanitizedSlug) throw new Error('Slug cannot be empty')
+
+  const { error } = await supabase.from('pages').update({ slug: sanitizedSlug }).eq('slug', oldSlug)
+
+  if (error) {
+    // Supabase unique constraint violation code is usually '23505'
+    if (error.code === '23505') {
+      throw new Error('This URL is already taken by another page.')
+    }
+    throw new Error(error.message)
+  }
+
   await revalidatePublicPage()
 }

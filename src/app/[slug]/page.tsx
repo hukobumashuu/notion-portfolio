@@ -6,8 +6,10 @@ import { NotionEditorWrapper } from '@/components/editor/NotionEditorWrapper'
 
 export const revalidate = 60
 
-export default async function AboutPublicPage() {
-  const page = await getPage('about')
+// Next.js 15 treats params as a Promise, so we await it!
+export default async function DynamicPublicPage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params
+  const page = await getPage(resolvedParams.slug)
 
   if (!page) notFound()
 
@@ -25,7 +27,7 @@ export default async function AboutPublicPage() {
           <h1 className="text-text-primary mb-8 text-4xl font-bold tracking-tight">{page.title}</h1>
 
           <div className="border-surface-border border-t pt-8">
-            <NotionEditorWrapper slug="about" initialContent={page.content} isEditing={false} />
+            <NotionEditorWrapper slug={page.slug} initialContent={page.content} isEditing={false} />
           </div>
         </div>
       </main>

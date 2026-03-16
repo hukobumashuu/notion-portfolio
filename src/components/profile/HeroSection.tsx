@@ -1,12 +1,12 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
 import type { Profile } from '@/lib/types'
 import { EditableText } from '@/components/editor/EditableText'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
 import { updateProfile } from '@/lib/supabase/mutations'
 import { ImageUpload } from '@/components/editor/ImageUpload'
+import { CalloutLinks } from './CallOutLinks'
 
 interface HeroSectionProps {
   profile: Profile | null
@@ -147,20 +147,7 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
         {/* RIGHT COLUMN: Action Card */}
         <div className="w-full shrink-0 md:w-65 lg:w-70">
           <div className="bg-surface-card border-surface-border flex w-full flex-col rounded-xl border p-2 shadow-sm">
-            <Link
-              href="/about"
-              className="hover:bg-surface-border/50 text-text-primary flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
-            >
-              <span className="text-lg">👩‍💻</span>
-              More about me
-            </Link>
-            <Link
-              href="/contact"
-              className="hover:bg-surface-border/50 text-text-primary flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
-            >
-              <span className="text-lg">📫</span>
-              Contact
-            </Link>
+            <CalloutLinks profile={profile} isEditing={isEditing} />
           </div>
         </div>
       </div>

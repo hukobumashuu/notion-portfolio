@@ -7,4 +7,5 @@ export type {
   ToolTag,
   ContentBlockType,
   Page,
+  CustomLink,
 } from './database'

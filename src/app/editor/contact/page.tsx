@@ -1,13 +1,14 @@
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@/lib/supabase' // ✅ Corrected import path
+import { createServerClient } from '@/lib/supabase'
 import { getPage } from '@/lib/supabase/queries'
 import { SaveStatusProvider } from '@/lib/context/SaveStatusContext'
 import { EditorSaveBar } from '@/components/editor/EditorSavebar'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { NotionEditorWrapper } from '@/components/editor/NotionEditorWrapper'
+import { ContactForm } from '@/components/ui/ContactForm'
 
-export default async function AboutEditorPage() {
+export default async function ContactEditorPage() {
   const supabase = await createServerClient()
   const {
     data: { user },
@@ -15,7 +16,7 @@ export default async function AboutEditorPage() {
 
   if (!user) redirect('/editor/login')
 
-  const page = await getPage('about')
+  const page = await getPage('contact')
 
   if (!page) notFound()
 
@@ -33,9 +34,11 @@ export default async function AboutEditorPage() {
 
           <h1 className="text-text-primary mb-8 text-4xl font-bold tracking-tight">{page.title}</h1>
 
-          <div className="border-surface-border border-t pt-8">
-            <NotionEditorWrapper slug="about" initialContent={page.content} isEditing={true} />
-          </div>
+          {/* Editable Intro Text (BlockNote) */}
+          <NotionEditorWrapper slug="contact" initialContent={page.content} isEditing={true} />
+
+          {/* The Contact Form */}
+          <ContactForm />
         </div>
       </main>
     </SaveStatusProvider>

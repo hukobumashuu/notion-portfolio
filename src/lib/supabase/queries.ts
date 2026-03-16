@@ -21,8 +21,19 @@ export async function getCollectionsWithProjects(): Promise<
   return (data ?? []) as Array<Collection & { projects: Project[] }>
 }
 
+// Fetch a single page by slug
 export async function getPage(slug: string): Promise<Page | null> {
   const supabase = await createServerClient()
   const { data } = await supabase.from('pages').select('*').eq('slug', slug).limit(1).maybeSingle()
   return data as Page | null
+}
+
+// Fetch all pages for the dashboard
+export async function getPages(): Promise<Page[]> {
+  const supabase = await createServerClient()
+  const { data } = await supabase
+    .from('pages')
+    .select('*')
+    .order('created_at', { ascending: false })
+  return (data ?? []) as Page[]
 }

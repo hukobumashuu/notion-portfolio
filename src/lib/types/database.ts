@@ -3,6 +3,13 @@ export type ToolTag = {
   color: string
 }
 
+export type CustomLink = {
+  id: string
+  label: string
+  url: string
+  emoji: string
+}
+
 export type ContentBlockType = 'heading' | 'subheading' | 'paragraph' | 'blockquote'
 
 export interface Database {
@@ -17,6 +24,7 @@ export interface Database {
           avatar_url: string | null
           updated_at: string
           cover_url: string | null
+          custom_links: CustomLink[] | null
         }
         Insert: Omit<Database['public']['Tables']['profile']['Row'], 'id' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['profile']['Insert']>
@@ -27,6 +35,7 @@ export interface Database {
           slug: string
           title: string
           content: unknown
+          is_protected: boolean
           created_at: string
           updated_at: string
         }
