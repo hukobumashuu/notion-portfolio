@@ -5,16 +5,57 @@ import { useState } from 'react'
 export function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSent, setIsSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setIsSubmitting(true)
+    setError(null)
 
-    // Simulate network request (We will wire this up to an email API later!)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const formData = new FormData(e.currentTarget)
+    const name = formData.get('name')
+    const email = formData.get('email')
+    const message = formData.get('message')
 
-    setIsSubmitting(false)
-    setIsSent(true)
+    // Safety check for the access key
+    const accessKey = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY
+    if (!accessKey) {
+      setError('System error: Missing access key.')
+      setIsSubmitting(false)
+      return
+    }
+
+    try {
+      // Fetch directly from the browser! Cloudflare won't block this.
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          access_key: accessKey,
+          name,
+          email,
+          message,
+          subject: `New Portfolio Message from ${name}`,
+          from_name: 'Portfolio Contact Form',
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setIsSent(true)
+      } else {
+        setError(result.message || 'Something went wrong.')
+      }
+    } catch (err) {
+      console.error(err)
+      setError('Failed to send message. Please check your connection and try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isSent) {
@@ -46,6 +87,7 @@ export function ContactForm() {
           </label>
           <input
             id="name"
+            name="name"
             required
             type="text"
             className="bg-surface-card border-surface-border text-text-primary focus:border-teal/50 focus:ring-teal/20 w-full rounded-md border px-3 py-2 text-sm transition-all outline-none focus:ring-2"
@@ -58,6 +100,7 @@ export function ContactForm() {
           </label>
           <input
             id="email"
+            name="email"
             required
             type="email"
             className="bg-surface-card border-surface-border text-text-primary focus:border-teal/50 focus:ring-teal/20 w-full rounded-md border px-3 py-2 text-sm transition-all outline-none focus:ring-2"
@@ -72,12 +115,15 @@ export function ContactForm() {
         </label>
         <textarea
           id="message"
+          name="message"
           required
           rows={5}
           className="bg-surface-card border-surface-border text-text-primary focus:border-teal/50 focus:ring-teal/20 w-full resize-none rounded-md border px-3 py-2 text-sm transition-all outline-none focus:ring-2"
           placeholder="What would you like to discuss?"
         />
       </div>
+
+      {error && <p className="text-sm text-red-400">{error}</p>}
 
       <button
         type="submit"
