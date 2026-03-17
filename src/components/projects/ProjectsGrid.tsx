@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import type { Collection, Project } from '@/lib/types'
 import { ProjectCard } from './ProjectCard'
 import { AddProjectCard } from './AddProjectCard'
@@ -120,15 +121,25 @@ export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProp
           </svg>
         </div>
 
-        <EditableText
-          as="span"
-          value={collection.title}
-          onSave={(val) => triggerSave(() => updateCollection(collection.id, val))}
-          isEditing={isEditing}
-          singleLine
-          className="text-text-primary shrink-0 text-sm font-semibold tracking-wide uppercase"
-          placeholder="Section title..."
-        />
+        {/* ✅ Public View gets a Link, Editor View keeps EditableText */}
+        {!isEditing ? (
+          <Link
+            href={`/gallery/${collection.id}`}
+            className="text-text-primary hover:text-teal shrink-0 text-sm font-semibold tracking-wide uppercase transition-colors"
+          >
+            {collection.title}
+          </Link>
+        ) : (
+          <EditableText
+            as="span"
+            value={collection.title}
+            onSave={(val) => triggerSave(() => updateCollection(collection.id, val))}
+            isEditing={isEditing}
+            singleLine
+            className="text-text-primary shrink-0 text-sm font-semibold tracking-wide uppercase"
+            placeholder="Section title..."
+          />
+        )}
 
         <div className="border-surface-border flex-1 border-t" />
 
@@ -244,15 +255,26 @@ export function ProjectsGrid({ collection, isEditing = false }: ProjectsGridProp
           )}
         </div>
 
-        {/* Delete Section Button (Hidden until hover) */}
+        {/* Editor Buttons (Hidden until hover) */}
         {isEditing && (
-          <button
-            onClick={() => setShowConfirm(true)}
-            className="border-surface-border ml-2 flex h-6 w-6 items-center justify-center rounded-md border text-xs opacity-0 transition-opacity group-hover/header:opacity-100 hover:border-red-400 hover:text-red-400"
-            aria-label="Delete section"
-          >
-            🗑
-          </button>
+          <div className="ml-2 flex items-center gap-1 opacity-0 transition-opacity group-hover/header:opacity-100">
+            {/* ✅ New Open as Page Button */}
+            <Link
+              href={`/editor/gallery/${collection.id}`}
+              className="border-surface-border hover:border-teal hover:text-teal text-text-muted flex h-6 w-6 items-center justify-center rounded-md border text-xs transition-colors"
+              title="Open as full page"
+            >
+              ⤢
+            </Link>
+            {/* Trash Can */}
+            <button
+              onClick={() => setShowConfirm(true)}
+              className="border-surface-border text-text-muted flex h-6 w-6 items-center justify-center rounded-md border text-xs transition-colors hover:border-red-400 hover:text-red-400"
+              aria-label="Delete section"
+            >
+              🗑
+            </button>
+          </div>
         )}
       </div>
 

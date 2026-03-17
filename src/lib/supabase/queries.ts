@@ -37,3 +37,19 @@ export async function getPages(): Promise<Page[]> {
     .order('created_at', { ascending: false })
   return (data ?? []) as Page[]
 }
+
+// Fetch a single collection and its projects by ID
+export async function getCollectionById(
+  id: string,
+): Promise<(Collection & { projects: Project[] }) | null> {
+  const supabase = await createServerClient()
+  const { data } = await supabase
+    .from('collections')
+    .select(`*, projects(*)`)
+    .eq('id', id)
+    .order('position', { referencedTable: 'projects' })
+    .limit(1)
+    .maybeSingle()
+
+  return data as (Collection & { projects: Project[] }) | null
+}
