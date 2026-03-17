@@ -52,33 +52,33 @@ export function CalloutLinks({ profile, isEditing }: CalloutLinksProps) {
   }
 
   return (
-    <div className="bg-surface-card border-surface-border flex w-full flex-col gap-1 rounded-xl border p-2 shadow-sm">
+    <div className="bg-notion-border-strong flex w-full flex-col gap-1 rounded-[10px] border border-transparent p-2.5">
       {links.map((link) => {
         // --- EDIT MODE UI ---
         if (isEditing && editingId === link.id && editForm) {
           return (
             <div
               key={link.id}
-              className="bg-surface border-surface-border flex flex-col gap-3 rounded-lg border p-3"
+              className="bg-notion-bg-card border-notion-border flex flex-col gap-3 rounded-lg border p-3"
             >
               <div className="flex gap-2">
                 <input
                   value={editForm.emoji}
                   onChange={(e) => setEditForm({ ...editForm, emoji: e.target.value })}
-                  className="bg-surface-card border-surface-border focus:border-teal/50 w-12 rounded border text-center outline-none"
+                  className="bg-notion-bg focus:border-notion-teal/50 text-notion-text w-12 rounded border border-transparent text-center outline-none"
                   placeholder="🔗"
                 />
                 <input
                   value={editForm.label}
                   onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
-                  className="bg-surface-card border-surface-border focus:border-teal/50 flex-1 rounded border px-2 text-sm outline-none"
+                  className="bg-notion-bg focus:border-notion-teal/50 text-notion-text flex-1 rounded border border-transparent px-2 text-sm outline-none"
                   placeholder="Button Label"
                 />
               </div>
               <input
                 value={editForm.url}
                 onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
-                className="bg-surface-card border-surface-border focus:border-teal/50 w-full rounded border px-2 py-1 font-mono text-sm outline-none"
+                className="bg-notion-bg focus:border-notion-teal/50 text-notion-text w-full rounded border border-transparent px-2 py-1 font-mono text-sm outline-none"
                 placeholder="/your-url"
               />
               <div className="mt-1 flex justify-between">
@@ -91,13 +91,13 @@ export function CalloutLinks({ profile, isEditing }: CalloutLinksProps) {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setEditingId(null)}
-                    className="text-text-muted hover:text-text-primary text-xs"
+                    className="text-notion-text-muted hover:text-notion-text text-xs"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={saveEdit}
-                    className="text-teal hover:text-teal/80 text-xs font-medium"
+                    className="text-notion-teal text-xs font-medium hover:opacity-80"
                   >
                     Save
                   </button>
@@ -115,17 +115,22 @@ export function CalloutLinks({ profile, isEditing }: CalloutLinksProps) {
               onClick={(e) => {
                 if (isEditing) e.preventDefault()
               }} // Prevent navigation when in editor mode
-              className="hover:bg-surface-border/50 text-text-primary flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
+              // ✅ 4. Sleeker link styling with Notion's underline trick and tight padding
+              className="text-notion-text flex w-full items-center rounded-md px-2 py-1.5 transition-colors hover:bg-white/5"
             >
-              <span className="text-lg">{link.emoji}</span>
-              {link.label}
+              <span className="mr-1.5 inline-flex h-6 w-6 shrink-0 items-center justify-center text-lg">
+                {link.emoji}
+              </span>
+              <span className="font-medium underline decoration-white/30 decoration-[0.05em] underline-offset-[10%] group-hover:decoration-white/50">
+                {link.label}
+              </span>
             </Link>
 
             {/* Hover Edit Button (Only visible in editor) */}
             {isEditing && (
               <button
                 onClick={() => startEdit(link)}
-                className="bg-surface-card border-surface-border text-text-muted hover:text-teal absolute right-2 rounded border p-1.5 text-xs opacity-0 transition-opacity group-hover:opacity-100"
+                className="bg-notion-bg-card border-notion-border text-notion-text-muted hover:text-notion-teal absolute right-2 rounded border p-1.5 text-xs opacity-0 transition-opacity group-hover:opacity-100"
               >
                 ⚙️
               </button>
@@ -138,7 +143,7 @@ export function CalloutLinks({ profile, isEditing }: CalloutLinksProps) {
       {isEditing && (
         <button
           onClick={addNewLink}
-          className="text-text-muted hover:bg-surface-border/50 hover:text-text-primary border-surface-border mt-1 w-full rounded-lg border border-dashed py-2 text-xs font-medium transition-colors"
+          className="text-notion-text-muted hover:text-notion-text border-notion-border mt-1 w-full rounded-md border border-dashed py-1.5 text-xs font-medium transition-colors hover:bg-white/5"
         >
           + Add Link
         </button>

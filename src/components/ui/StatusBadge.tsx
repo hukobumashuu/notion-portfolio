@@ -1,39 +1,22 @@
-const STATUS_CONFIG: Record<string, { color: string; dot: string }> = {
-  Done: {
-    color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-    dot: 'bg-emerald-400',
-  },
-  'In Progress': {
-    color: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-    dot: 'bg-amber-400',
-  },
-  'On Hold': {
-    color: 'text-text-muted bg-surface-border/30 border-surface-border',
-    dot: 'bg-text-muted',
-  },
-  Archived: {
-    color: 'text-text-muted bg-surface-border/30 border-surface-border',
-    dot: 'bg-text-muted',
-  },
-}
+import { cn } from '@/lib/utils'
 
-// ✅ FIX 3: Defined a hardcoded fallback so TypeScript knows it can never be undefined
-const FALLBACK_CONFIG = {
-  color: 'text-text-muted bg-surface-border/30 border-surface-border',
-  dot: 'bg-text-muted',
-}
-
-export function StatusBadge({ status }: { status: string | null }) {
+export function StatusBadge({ status }: { status?: string }) {
   if (!status) return null
 
-  const config = STATUS_CONFIG[status] ?? FALLBACK_CONFIG
-
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium ${config.color}`}
+    <div
+      className={cn(
+        // Exact Notion geometry matching the TagPill
+        'm-0 flex h-5 max-w-full min-w-0 shrink-0 items-center overflow-hidden rounded-[3px] px-1.5 text-[12px] leading-4.5 whitespace-nowrap',
+      )}
+      style={{
+        backgroundColor: '#fffceb4e', // Notion Gray Background
+        color: '#f0efed', // Notion Text Color
+      }}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${config.dot}`} />
-      {status}
-    </span>
+      <span className="inline-flex h-5 items-center overflow-hidden leading-4.5 text-ellipsis whitespace-nowrap">
+        {status}
+      </span>
+    </div>
   )
 }

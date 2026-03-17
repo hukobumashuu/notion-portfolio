@@ -31,14 +31,14 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
     }
   }
 
-  // ✅ Smarter Cover Logic: Only show the cover area if an image exists OR we are in the editor
   const showCover = isEditing || !!coverUrl
 
   return (
-    <section className="relative flex w-full flex-col items-center">
-      {/* --- COVER IMAGE COMPONENT --- */}
+    // 'contents' allows the children to directly participate in the parent's CSS Grid
+    <section className="contents">
+      {/* --- COVER IMAGE (FULL BLEED) --- */}
       {showCover && (
-        <div className="bg-surface-card border-surface-border group relative h-48 w-screen overflow-hidden border-b md:h-64">
+        <div className="notion-full-width group border-notion-border bg-notion-bg-hover relative h-48 w-full overflow-hidden border-b md:h-[30vh]">
           {isEditing ? (
             <ImageUpload
               bucket="covers"
@@ -54,8 +54,7 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
                   className="object-cover object-[center_50%]"
                 />
               ) : (
-                // ✅ Replaced the Teal Gradient with a clean, neutral grey placeholder for the Editor
-                <div className="text-text-muted flex h-full w-full items-center justify-center">
+                <div className="text-notion-text-muted flex h-full w-full items-center justify-center">
                   <span className="text-sm font-medium">Click to upload cover image</span>
                 </div>
               )}
@@ -66,62 +65,63 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
               </div>
             </ImageUpload>
           ) : (
-            // Public view when cover exists
             <Image src={coverUrl!} alt="Cover" fill className="object-cover object-[center_50%]" />
           )}
         </div>
       )}
 
-      {/* --- HERO CONTENT --- */}
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-1 flex-col items-start text-left">
-          {/* ✅ Dynamic Margin: -mt overlaps the cover. If no cover (public), it uses standard padding instead! */}
-          <div
-            className={`relative z-10 flex items-end gap-4 md:gap-6 ${showCover ? '-mt-12 md:-mt-16' : 'pt-4 md:pt-8'}`}
-          >
-            {/* Avatar */}
-            <div className="bg-surface-card border-surface-border relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-sm md:h-32 md:w-32">
-              {isEditing ? (
-                <ImageUpload
-                  bucket="avatars"
-                  path="avatar"
-                  onUpload={(url) =>
-                    triggerSave(() => updateProfile(profile!.id, { avatar_url: url }))
-                  }
-                  className="h-full w-full"
-                >
-                  {avatarUrl ? (
-                    <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="128px" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-5xl">
-                      👋
-                    </div>
-                  )}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
-                    <span className="text-xl">📷</span>
-                  </div>
-                </ImageUpload>
-              ) : avatarUrl ? (
-                <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="128px" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-5xl">👋</div>
-              )}
-            </div>
+      {/* --- HERO CONTENT (CONSTRAINED) --- */}
+      <div className="notion-content text-notion-text flex w-full flex-col items-start pt-2">
+        {/* Avatar & Title Block */}
+        <div
+          className={`relative z-10 flex w-full flex-col ${showCover ? '-mt-12 md:-mt-16' : 'pt-4 md:pt-8'}`}
+        >
+          {/* Avatar */}
+          <div className="bg-notion-bg relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg shadow-sm md:h-32 md:w-32">
+            {isEditing ? (
+              <ImageUpload
+                bucket="avatars"
+                path="avatar"
+                onUpload={(url) =>
+                  triggerSave(() => updateProfile(profile!.id, { avatar_url: url }))
+                }
+                className="h-full w-full"
+              >
+                {avatarUrl ? (
+                  <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="128px" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-5xl">👋</div>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                  <span className="text-xl">📷</span>
+                </div>
+              </ImageUpload>
+            ) : avatarUrl ? (
+              <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="128px" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-5xl">👋</div>
+            )}
+          </div>
 
-            {/* Title */}
+          {/* Title */}
+          <div className="mt-4 mb-2">
             <EditableText
               as="h1"
               value={name}
               onSave={handleSave('name')}
               isEditing={isEditing}
               singleLine
-              className="text-text-primary pb-1 text-3xl font-bold tracking-tight md:pb-2 md:text-5xl"
+              className="text-notion-text text-[32px] leading-[1.2] font-bold tracking-tight md:text-[40px]"
               placeholder="Your name..."
             />
           </div>
+        </div>
 
-          <div className="mt-6 max-w-2xl">
-            <p className="text-text-primary text-base leading-relaxed md:text-lg">
+        {/* --- THE 50/50 CORE SPLIT ROW --- */}
+        <div className="flex w-full flex-col gap-11.5 md:flex-row">
+          {/* LEFT COLUMN: Bio */}
+          <div className="flex w-full shrink-0 grow-0 flex-col py-3 md:w-[calc(50%-23px)]">
+            <p className="m-0 px-1.5 pt-5.5 text-[1.25em] leading-[1.3] font-semibold wrap-break-word whitespace-pre-wrap">
               {'A '}
               <EditableText
                 as="span"
@@ -129,7 +129,7 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
                 onSave={handleSave('role')}
                 isEditing={isEditing}
                 singleLine
-                className="font-semibold text-[#46a171]" // ✅ Switched to Notion's exact native green highlight
+                className="text-notion-green font-semibold"
                 placeholder="data analyst"
               />{' '}
               <EditableText
@@ -137,17 +137,18 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
                 value={bio}
                 onSave={handleSave('bio')}
                 isEditing={isEditing}
-                className="text-text-muted"
+                className="text-notion-text-muted"
                 placeholder="with a background in..."
               />
             </p>
           </div>
-        </div>
 
-        {/* RIGHT COLUMN: Action Card */}
-        <div className="w-full shrink-0 md:w-65 lg:w-70">
-          <div className="bg-surface-card border-surface-border flex w-full flex-col rounded-xl border p-2 shadow-sm">
-            <CalloutLinks profile={profile} isEditing={isEditing} />
+          {/* RIGHT COLUMN: Action Card */}
+          <div className="flex w-full shrink-0 grow-0 flex-col py-3 md:w-[calc(50%-23px)]">
+            {/* ✅ Reduced padding from p-3 to p-1.5 here! */}
+            <div className="bg-notion-border-strong flex min-h-8 w-full flex-col rounded-[10px] border border-transparent p-1.5">
+              <CalloutLinks profile={profile} isEditing={isEditing} />
+            </div>
           </div>
         </div>
       </div>

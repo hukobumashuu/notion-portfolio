@@ -98,40 +98,49 @@ export function TagEditor({
         {tags.map((t) => t.label).join(', ')}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        {tags.map((tag, i) => (
-          <div
-            key={tag.label}
-            className="relative flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
-            style={{ backgroundColor: tag.color ?? '#4B5563' }}
-          >
-            {withColor && (
+      {/* 🎨 Notion Spacing: 6px horizontal gap, 4px vertical gap */}
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+        {tags.map((tag, i) => {
+          // Notion UI Trick: Background is hex + 33 (20% opacity), Text is solid hex
+          const bgColor = tag.color ? `${tag.color}33` : 'rgba(255,255,255,0.055)'
+          const textColor = tag.color ? tag.color : '#f0efed'
+
+          return (
+            <div
+              key={tag.label}
+              // 🎨 Notion Geometry: 18px height, 3px radius, 6px padding, 12px font
+              className="relative flex h-4.5 items-center gap-1 rounded-[3px] px-1.5 text-[12px] leading-4.5 font-medium whitespace-nowrap"
+              style={{ backgroundColor: bgColor, color: textColor }}
+            >
+              {withColor && (
+                <button
+                  ref={(el) => {
+                    swatchRefs.current[i] = el
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openPicker(i)
+                  }}
+                  // 🎨 Tiny square button for the color picker
+                  className="h-2.5 w-2.5 shrink-0 rounded-xs border border-current opacity-70 transition-opacity hover:opacity-100"
+                  style={{ backgroundColor: textColor }}
+                  aria-label="Change color"
+                />
+              )}
+              {tag.label}
               <button
-                ref={(el) => {
-                  swatchRefs.current[i] = el
-                }}
                 onClick={(e) => {
                   e.stopPropagation()
-                  openPicker(i)
+                  removeTag(i)
                 }}
-                className="h-2.5 w-2.5 shrink-0 rounded-full border border-white/30"
-                style={{ backgroundColor: tag.color }}
-                aria-label="Change color"
-              />
-            )}
-            {tag.label}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                removeTag(i)
-              }}
-              className="ml-0.5 opacity-60 transition-opacity hover:opacity-100"
-              aria-label={`Remove ${tag.label}`}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+                className="ml-0.5 flex h-3 w-3 items-center justify-center rounded opacity-60 transition-opacity hover:bg-black/10 hover:opacity-100"
+                aria-label={`Remove ${tag.label}`}
+              >
+                ×
+              </button>
+            </div>
+          )
+        })}
 
         <input
           type="text"
@@ -140,7 +149,8 @@ export function TagEditor({
           onKeyDown={handleKeyDown}
           onBlur={addTag}
           placeholder={placeholder}
-          className="border-surface-border text-text-muted placeholder:text-text-muted focus:border-teal focus:text-text-primary min-w-20 rounded-full border border-dashed bg-transparent px-2.5 py-0.5 text-xs focus:outline-none"
+          // 🎨 Notion Input Geometry matching the tag exactly
+          className="border-notion-border text-notion-text placeholder:text-notion-text-muted focus:border-notion-teal focus:text-notion-text h-4.5 min-w-20 rounded-[3px] border border-dashed bg-transparent px-1.5 text-[12px] leading-4.5 focus:outline-none"
         />
       </div>
 
@@ -149,7 +159,7 @@ export function TagEditor({
         createPortal(
           <div
             data-color-picker
-            className="border-surface-border bg-surface-card fixed z-200 flex gap-1 rounded-lg border p-2 shadow-xl"
+            className="border-notion-border bg-notion-bg-card fixed z-200 flex max-w-35 flex-wrap gap-1.5 rounded-md border p-2 shadow-[0px_4px_12px_rgba(0,0,0,0.1)]"
             style={{ top: pickerPos.top, left: pickerPos.left }}
           >
             {DEFAULT_COLORS.map((c) => (
@@ -157,9 +167,9 @@ export function TagEditor({
                 key={c}
                 onClick={() => updateColor(pickerIndex, c)}
                 className={cn(
-                  'h-5 w-5 rounded-full transition-transform hover:scale-110',
+                  'h-5 w-5 rounded-[3px] transition-transform hover:scale-110',
                   tags[pickerIndex]?.color === c &&
-                    'ring-offset-surface-card ring-2 ring-white ring-offset-1',
+                    'ring-offset-notion-bg-card ring-1 ring-white ring-offset-1',
                 )}
                 style={{ backgroundColor: c }}
                 aria-label={c}

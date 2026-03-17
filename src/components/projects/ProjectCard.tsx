@@ -9,7 +9,7 @@ import { EditableText } from '@/components/editor/EditableText'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
 import { updateProject, deleteProject } from '@/lib/supabase/mutations'
 import { ImageUpload } from '@/components/editor/ImageUpload'
-import { useState, useEffect } from 'react' // ✅ Added useEffect
+import { useState, useEffect } from 'react'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useRouter } from 'next/navigation'
 
@@ -27,7 +27,6 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
   const router = useRouter()
   const [project, setProject] = useState(initialProject)
 
-  // ✅ THE BUG FIX: Sync local state when Next.js passes down a new array
   useEffect(() => {
     setProject(initialProject)
   }, [initialProject])
@@ -56,9 +55,10 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
 
   return (
     <ProjectModal project={project} isEditing={isEditing} onProjectUpdate={handleProjectUpdate}>
-      {/* ✅ L-02: Added hover lift (-translate-y-0.5) and kept 'relative' */}
-      <div className="group rounded-card border-surface-border bg-surface-card hover:border-teal/40 hover:shadow-teal/5 flex h-full cursor-pointer flex-col border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
-        <div className="rounded-t-card bg-surface relative h-48 w-full shrink-0 overflow-hidden">
+      {/* 🟢 Applied bg-[#2f2f2f2f] and adjusted hover state slightly so it still reacts to being clicked */}
+      <div className="group border-notion-border-strong flex h-full cursor-pointer flex-col overflow-hidden rounded-[10px] border bg-[#2f2f2f] shadow-[0_2px_4px_rgba(25,25,25,0.08)] transition-colors duration-100 hover:bg-[#2f2f2f]">
+        {/* Thumbnail Image */}
+        <div className="border-notion-border-strong relative h-50 w-full shrink-0 overflow-hidden border-b">
           {isEditing ? (
             <div onClick={(e) => e.stopPropagation()} className="h-full w-full">
               <ImageUpload
@@ -74,11 +74,11 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
                     src={project.thumbnail_url}
                     alt={project.title}
                     fill
-                    className="object-cover opacity-80"
+                    className="object-cover"
                     sizes="(max-width: 768px) 100vw, 33vw"
                   />
                 ) : (
-                  <div className="text-text-muted flex h-full w-full flex-col items-center justify-center gap-1">
+                  <div className="text-notion-text-muted bg-notion-bg-card flex h-full w-full flex-col items-center justify-center gap-1">
                     <span className="text-2xl">🖼️</span>
                     <span className="text-xs">Click to upload</span>
                   </div>
@@ -95,14 +95,11 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
               src={project.thumbnail_url}
               alt={project.title}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="object-cover"
               sizes="(max-width: 768px) 100vw, 33vw"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none'
-              }}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
+            <div className="bg-notion-bg-card flex h-full w-full items-center justify-center">
               <EditableText
                 as="span"
                 value={project.emoji ?? '📄'}
@@ -116,35 +113,41 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
           )}
         </div>
 
-        {/* ✅ L-02: Content padding is now p-5 */}
-        <div className="flex flex-1 flex-col p-5">
-          <div className="mb-3">
+        {/* 🟢 CONTENT BLOCK: Changed pb-1.5 to pb-3 to add a gap at the bottom of the card */}
+        <div className="relative flex flex-1 flex-col px-2.5 pt-2 pb-3">
+          {/* Title Row with Emoji */}
+          {/* 🟢 Changed mb-1.5 to mb-3 to create a gap between the title and the tags */}
+          <div className="mb-3 flex w-full items-start gap-1.5">
+            <span className="mt-1 shrink-0 text-[14px] leading-none">{project.emoji ?? '📄'}</span>
             <EditableText
               as="h3"
               value={project.title}
               onSave={handleSave('title')}
               isEditing={isEditing}
               singleLine
-              className="text-text-primary text-[13px] leading-snug font-semibold"
+              className="text-notion-text text-[15px] leading-normal font-medium wrap-break-word"
               placeholder="Project title..."
             />
           </div>
 
+          {/* Tags Row */}
           {project.tool_tags.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-1.5">
+            <div className="mb-2 flex flex-wrap items-center gap-1 px-1">
               {project.tool_tags.map((tag) => (
                 <TagPill key={tag.label} label={tag.label} color={tag.color} />
               ))}
             </div>
           )}
 
-          <div className="mt-auto pt-2">
+          {/* Status Row */}
+          {/* 🟢 Added mt-auto to push the status pill down, preserving the pb-3 gap below it */}
+          <div className="mt-auto flex items-center px-1">
             {isEditing ? (
               <select
                 value={project.status ?? 'In Progress'}
                 onChange={(e) => handleSave('status')(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
-                className="border-surface-border bg-surface text-text-primary mt-1 rounded-md border px-2 py-1 text-xs focus:outline-none"
+                className="text-notion-text-muted border-notion-border-strong rounded border bg-transparent px-1 py-0.5 text-[12px] focus:outline-none"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
@@ -153,17 +156,18 @@ export function ProjectCard({ project: initialProject, isEditing = false }: Proj
                 ))}
               </select>
             ) : (
-              <StatusBadge status={project.status} />
+              <StatusBadge status={project.status ?? undefined} />
             )}
           </div>
 
+          {/* Editor Delete Button */}
           {isEditing && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 setShowConfirm(true)
               }}
-              className="bg-surface-card/80 text-text-muted absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-md transition-opacity hover:text-red-400"
+              className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md bg-black/40 text-white/70 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
               aria-label="Delete project"
             >
               🗑

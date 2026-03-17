@@ -1,15 +1,26 @@
+import { cn } from '@/lib/utils'
+
 interface TagPillProps {
   label: string
   color?: string
 }
 
 export function TagPill({ label, color }: TagPillProps) {
+  // Use the database hex color for the background tint. If undefined, fallback to Notion's default gray
+  const bgColor = color ? `${color}33` : 'rgba(255,255,255,0.055)'
+
   return (
-    <span
-      className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-white/90 transition-opacity"
-      style={{ backgroundColor: color ?? '#374151' }}
+    <div
+      className={cn(
+        'm-0 flex h-5 max-w-full min-w-0 shrink-0 items-center overflow-hidden rounded-[3px] px-1.5 text-[12px] leading-4.5 whitespace-nowrap text-white',
+      )}
+      style={{
+        backgroundColor: bgColor,
+      }}
     >
-      {label}
-    </span>
+      <span className="inline-flex h-5 items-center overflow-hidden leading-4.5 text-ellipsis whitespace-nowrap">
+        {label}
+      </span>
+    </div>
   )
 }

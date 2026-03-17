@@ -7,7 +7,6 @@ import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
   const profile = await getProfile()
-
   const title = profile?.name ?? 'Portfolio'
   const description = profile?.bio ? `${profile.role} — ${profile.bio}` : 'Personal portfolio'
 
@@ -20,11 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
       images: profile?.avatar_url ? [{ url: profile.avatar_url, width: 400, height: 400 }] : [],
     },
-    twitter: {
-      card: 'summary',
-      title,
-      description,
-    },
+    twitter: { card: 'summary', title, description },
   }
 }
 
@@ -38,16 +33,15 @@ export default async function PublicPage() {
 
   return (
     <SaveStatusProvider>
-      <main className="bg-surface min-h-screen">
-        {/* Removed top padding (pt-10) here so the HeroSection's negative margin overlaps the banner correctly */}
-        <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
-          <HeroSection profile={profile} />
+      {/* 🟢 The entire page acts as the fluid Notion Grid */}
+      <main className="notion-page-scroller min-h-screen">
+        <HeroSection profile={profile} />
 
-          <div className="mt-20 space-y-16">
-            {collectionsWithProjects.map((collection: Collection & { projects: Project[] }) => (
-              <ProjectsGrid key={collection.id} collection={collection} isEditing={false} />
-            ))}
-          </div>
+        {/* 🟢 Projects grid stays strictly inside the content boundaries */}
+        <div className="notion-content mt-20 space-y-16">
+          {collectionsWithProjects.map((collection: Collection & { projects: Project[] }) => (
+            <ProjectsGrid key={collection.id} collection={collection} isEditing={false} />
+          ))}
         </div>
       </main>
     </SaveStatusProvider>
