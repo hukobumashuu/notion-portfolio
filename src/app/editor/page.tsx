@@ -26,20 +26,29 @@ export default async function EditorPage() {
   return (
     <SaveStatusProvider>
       <EditorSaveBar />
-      {/* pt-14 exists here strictly to clear the sticky EditorSaveBar */}
-      <main className="bg-surface relative z-10 min-h-screen pt-14">
-        <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
-          <HeroSection profile={profile} isEditing={true} />
 
+      {/* 🟢 Use the fluid Notion Grid on the <main> tag. 
+          pt-14 exists here strictly to clear the sticky EditorSaveBar */}
+      <main className="notion-page-scroller relative z-10 min-h-screen pt-14">
+        {/* Hero section directly under the scroller so it can span full width */}
+        <HeroSection profile={profile} isEditing={true} />
+
+        {/* 🟢 Wrap the rest of the content strictly inside the content boundaries */}
+        <div className="notion-content pb-16">
+          {/* Page Manager */}
           <div className="mt-16">
             <PageManager pages={pages} />
           </div>
 
+          {/* Projects Grid & Add Section */}
           <div className="mt-20 space-y-16">
             {collections.map((collection: Collection & { projects: Project[] }) => (
               <ProjectsGrid key={collection.id} collection={collection} isEditing={true} />
             ))}
-            <AddSectionButton position={collections.length} />
+
+            <div className="pt-4">
+              <AddSectionButton position={collections.length} />
+            </div>
           </div>
         </div>
       </main>

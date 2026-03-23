@@ -31,14 +31,25 @@ export default async function PublicPage() {
     getCollectionsWithProjects(),
   ])
 
+  const ownerName = profile?.name ?? 'Owner'
+
   return (
     <SaveStatusProvider>
-      {/* 🟢 The entire page acts as the fluid Notion Grid */}
-      <main className="notion-page-scroller min-h-screen">
+      <header className="bg-notion-bg sticky top-0 z-50 flex h-11 w-full items-center justify-between overflow-hidden pr-2.5 pl-3">
+        {/* Left Side: Mock Breadcrumb / Title */}
+        <div className="flex items-center gap-2 overflow-hidden">
+          <span className="text-notion-text truncate text-[14px] font-medium">
+            Hey there, I&apos;m {ownerName}!
+          </span>
+        </div>
+
+        <div></div>
+      </header>
+
+      <main className="notion-page-scroller min-h-[calc(100vh-44px)]">
         <HeroSection profile={profile} />
 
-        {/* 🟢 Projects grid stays strictly inside the content boundaries */}
-        <div className="notion-content mt-20 space-y-16">
+        <div className="notion-content mt-20 space-y-16 pb-16">
           {collectionsWithProjects.map((collection: Collection & { projects: Project[] }) => (
             <ProjectsGrid key={collection.id} collection={collection} isEditing={false} />
           ))}

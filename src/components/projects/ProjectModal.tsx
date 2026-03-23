@@ -105,7 +105,7 @@ export function ProjectModal({
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-0 py-0 backdrop-blur-sm sm:items-center sm:px-4 sm:py-8"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-0 py-0 backdrop-blur-sm sm:items-center sm:px-4 sm:py-8"
           onClick={(e) => e.target === e.currentTarget && setIsOpen(false)}
         >
           <div
@@ -114,25 +114,30 @@ export function ProjectModal({
             role="dialog"
             aria-modal="true"
             aria-label={project.title}
-            className="bg-surface-modal sm:rounded-card sm:border-surface-border relative flex h-full w-full flex-col overflow-hidden border-0 shadow-2xl focus:outline-none sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:border"
+            className="sm:border-notion-border bg-notion-bg-hover relative flex h-full w-full flex-col overflow-hidden border-0 shadow-2xl focus:outline-none sm:h-auto sm:max-h-[80vh] sm:max-w-4xl sm:rounded-[10px] sm:border"
           >
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-text-muted hover:bg-surface-border hover:text-text-primary absolute top-4 right-4 z-10 flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-              aria-label="Close modal"
-            >
-              ✕
-            </button>
+            <div className="bg-notion-bg-hover z-20 flex h-11 w-full shrink-0 items-center justify-between border-b border-transparent pr-2.5 pl-3">
+              <div></div>
 
-            <div className="overflow-y-auto">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-notion-text-muted hover:text-notion-text flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-white/5"
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {/* COVER BANNER */}
               {project.thumbnail_url && (
-                <div className="bg-surface relative h-48 w-full shrink-0">
+                <div className="border-notion-border relative h-[30vh] max-h-40 w-full shrink-0 border-b">
                   <Image
                     src={project.thumbnail_url}
                     alt={project.title}
                     fill
-                    className="object-cover"
-                    sizes="672px"
+                    className="object-cover object-[center_50%]"
+                    sizes="768px"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
                     }}
@@ -140,14 +145,25 @@ export function ProjectModal({
                 </div>
               )}
 
-              <div className="p-8">
-                <div className="mb-6 flex items-center gap-3">
-                  <span className="text-3xl">{project.emoji ?? '📄'}</span>
-                  <h2 className="text-text-primary text-2xl font-bold">{project.title}</h2>
+              {/* HERO SECTION: Avatar & Title */}
+              <div className="flex w-full flex-col items-start px-20 pb-20 sm:px-40">
+                <div
+                  className={cn(
+                    'relative z-10 flex w-full flex-col',
+                    project.thumbnail_url ? '-mt-12 md:-mt-16' : 'pt-8',
+                  )}
+                >
+                  <div className="bg-notion-bg-hover flex h-20 w-20 shrink-0 items-center justify-center rounded-lg text-5xl shadow-sm sm:h-24 sm:w-24 sm:text-6xl">
+                    {project.emoji ?? '📄'}
+                  </div>
+
+                  <h1 className="text-notion-text mt-4 mb-8 text-3xl font-bold tracking-tight md:text-4xl">
+                    {project.title}
+                  </h1>
                 </div>
 
-                <div className="mb-8 space-y-3">
-                  {/* ✅ Added icon="⊞" */}
+                {/* PROPERTIES / METADATA */}
+                <div className="mb-8 w-full space-y-2">
                   {(localToolTags.length > 0 || isEditing) && (
                     <MetaRow label="Tools Used" icon="⊞">
                       {isEditing ? (
@@ -164,16 +180,20 @@ export function ProjectModal({
                           }}
                         />
                       ) : (
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1">
                           {localToolTags.map((tag) => (
-                            <TagPill key={tag.label} label={tag.label} color={tag.color} />
+                            <TagPill
+                              key={tag.label}
+                              label={tag.label}
+                              color={tag.color}
+                              size="md"
+                            />
                           ))}
                         </div>
                       )}
                     </MetaRow>
                   )}
 
-                  {/* ✅ Added icon="◈" */}
                   {(localSectorTags.length > 0 || isEditing) && (
                     <MetaRow label="Sector" icon="◈">
                       {isEditing ? (
@@ -190,27 +210,24 @@ export function ProjectModal({
                           }}
                         />
                       ) : (
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1">
                           {localSectorTags.map((tag) => (
-                            <TagPill key={tag} label={tag} />
+                            <TagPill key={tag} label={tag} size="md" />
                           ))}
                         </div>
                       )}
                     </MetaRow>
                   )}
 
-                  {/* ✅ Added icon="◎" */}
                   {localStatus && (
                     <MetaRow label="Status" icon="◎">
-                      <StatusBadge status={localStatus} />
+                      <StatusBadge status={localStatus} size="md" />
                     </MetaRow>
                   )}
 
-                  {/* ✅ Added icon="⏱" */}
                   {(localDuration || isEditing) && (
                     <MetaRow label="Duration" icon="⏱">
                       <EditableText
-                        // ✅ Changed from "span" to "div"
                         as="p"
                         value={localDuration ?? ''}
                         onSave={(val) => {
@@ -220,25 +237,24 @@ export function ProjectModal({
                         }}
                         isEditing={isEditing}
                         singleLine
-                        // ✅ Added "w-full" so the entire row is clickable
-                        className="text-text-primary w-full text-sm"
+                        className="text-notion-text -ml-1 w-full rounded px-1 text-[16px] transition-colors hover:bg-white/5"
                         placeholder="e.g. 10 weeks"
                       />
                     </MetaRow>
                   )}
                 </div>
 
-                <hr className="border-surface-border mb-8" />
+                <hr className="border-notion-border mb-8 w-full" />
 
+                {/* CONTENT BLOCKS */}
                 {isLoadingBlocks ? (
-                  <div className="space-y-3">
+                  <div className="w-full space-y-3">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="bg-surface-card h-4 animate-pulse rounded" />
+                      <div key={i} className="bg-notion-border-strong h-4 animate-pulse rounded" />
                     ))}
                   </div>
                 ) : (
-                  // ✅ Changed space-y-4 to space-y-5
-                  <div className="space-y-5">
+                  <div className="w-full space-y-5">
                     {blocks.map((block) => (
                       <ContentBlockRenderer
                         key={block.id}
@@ -249,12 +265,12 @@ export function ProjectModal({
                     ))}
 
                     {isEditing && (
-                      <div className="border-surface-border mt-4 flex flex-wrap gap-2 border-t pt-4">
+                      <div className="border-notion-border mt-4 flex flex-wrap gap-2 border-t pt-4">
                         {BLOCK_TYPES.map(({ type, label, icon }) => (
                           <button
                             key={type}
                             onClick={() => handleAddBlock(type)}
-                            className="border-surface-border text-text-muted hover:border-teal hover:text-teal flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs transition-colors"
+                            className="border-notion-border text-notion-text-muted hover:border-notion-teal hover:text-notion-teal flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs transition-colors"
                           >
                             <span className="font-mono">{icon}</span>
                             {label}
@@ -283,12 +299,12 @@ function MetaRow({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="flex w-28 shrink-0 items-center gap-2">
-        <span className="text-text-muted text-xs">{icon}</span>
-        <span className="text-text-muted text-xs">{label}</span>
+    <div className="flex items-center gap-2">
+      <div className="flex w-32 shrink-0 items-center gap-1.5">
+        <span className="text-notion-text-muted text-[16px] opacity-80">{icon}</span>
+        <span className="text-notion-text-muted text-[16px]">{label}</span>
       </div>
-      <div className="flex-1">{children}</div>
+      <div className="flex min-h-7 flex-1 items-center">{children}</div>
     </div>
   )
 }
@@ -318,8 +334,8 @@ function ContentBlockRenderer({
     switch (block.type) {
       case 'heading':
         return (
-          <h3 className="text-teal flex items-center gap-2 pt-2 text-base font-semibold">
-            <span className="text-teal opacity-70">✳</span>
+          <h3 className="text-notion-text flex items-center gap-2 pt-2 text-[24px] font-bold">
+            {isEditing && <span className="text-notion-teal text-sm opacity-70">H1</span>}
             <EditableText
               {...editableProps}
               as="span"
@@ -334,7 +350,7 @@ function ContentBlockRenderer({
             {...editableProps}
             as="h4"
             singleLine
-            className="text-amber-portfolio text-base font-semibold"
+            className="text-notion-text text-[20px] font-bold"
             placeholder="Subheading..."
           />
         )
@@ -343,19 +359,14 @@ function ContentBlockRenderer({
           <EditableText
             {...editableProps}
             as="p"
-            className="text-text-muted text-[14px] leading-7"
+            className="text-notion-text text-[16px] leading-normal"
             placeholder="Write something..."
           />
         )
       case 'blockquote':
         return (
-          <blockquote className="border-teal bg-teal/5 rounded-r-md border-l-[3px] py-2 pl-4">
-            <EditableText
-              {...editableProps}
-              as="p"
-              className="text-teal text-sm italic"
-              placeholder="A key quote or insight..."
-            />
+          <blockquote className="border-notion-text text-notion-text border-l-[3px] py-1 pl-4 text-[16px] italic">
+            <EditableText {...editableProps} as="p" placeholder="A key quote or insight..." />
           </blockquote>
         )
       default:
@@ -369,7 +380,7 @@ function ContentBlockRenderer({
       {isEditing && (
         <button
           onClick={onDelete}
-          className="text-text-muted absolute top-0 right-0 flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all group-hover/block:opacity-100 hover:text-red-400"
+          className="text-notion-text-muted absolute top-0 right-0 flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all group-hover/block:opacity-100 hover:text-red-400"
           aria-label="Delete block"
         >
           ✕
