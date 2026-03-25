@@ -7,6 +7,8 @@ import { useSaveStatus } from '@/lib/context/SaveStatusContext'
 import { updateProfile } from '@/lib/supabase/mutations'
 import { ImageUpload } from '@/components/editor/ImageUpload'
 import { CalloutLinks } from './CallOutLinks'
+import { NotionEditorWrapper } from '@/components/editor/NotionEditorWrapper'
+import { EmojiPickerModal } from '@/components/editor/EmojiPickerModal'
 
 interface HeroSectionProps {
   profile: Profile | null
@@ -16,15 +18,11 @@ interface HeroSectionProps {
 export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
   const { triggerSave } = useSaveStatus()
 
-  const name = profile?.name ?? "Hey there, I'm Kristhia!"
-  const role = profile?.role ?? 'data analyst'
-  const bio =
-    profile?.bio ??
-    'with a background in research and project management, transforming complex data into actionable insights.'
+  const name = profile?.name ?? "Hey there, I'm Owner!"
   const avatarUrl = profile?.avatar_url
   const coverUrl = profile?.cover_url
 
-  function handleSave(field: keyof Pick<Profile, 'name' | 'role' | 'bio'>) {
+  function handleSave(field: keyof Pick<Profile, 'name'>) {
     return (value: string) => {
       if (!profile) return
       triggerSave(() => updateProfile(profile.id, { [field]: value }))
@@ -34,7 +32,6 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
   const showCover = isEditing || !!coverUrl
 
   return (
-    // 'contents' allows the children to directly participate in the parent's CSS Grid
     <section className="contents">
       {/* --- COVER IMAGE (FULL BLEED) --- */}
       {showCover && (
@@ -76,34 +73,52 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
         <div
           className={`relative z-10 flex w-full flex-col ${showCover ? '-mt-12 md:-mt-16' : 'pt-4 md:pt-8'}`}
         >
-          {/* Avatar */}
-          <div className="bg-notion-bg relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg shadow-sm md:h-32 md:w-32">
-            {isEditing ? (
-              <ImageUpload
-                bucket="avatars"
-                path="avatar"
-                onUpload={(url) =>
-                  triggerSave(() => updateProfile(profile!.id, { avatar_url: url }))
-                }
-                className="h-full w-full"
-              >
-                {avatarUrl ? (
-                  <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="128px" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-5xl">👋</div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
-                  <span className="text-xl">📷</span>
-                </div>
-              </ImageUpload>
-            ) : avatarUrl ? (
-              <Image src={avatarUrl} alt={name} fill className="object-cover" sizes="128px" />
+          {/* --- AVATAR BLOCK (Upgraded for Alpha Transparency) --- */}
+          <div className="group/avatar relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg md:h-32 md:w-32">
+            {avatarUrl && avatarUrl.startsWith('http') ? (
+              <Image
+                src={avatarUrl}
+                alt={name}
+                fill
+                className="object-contain drop-shadow-sm"
+                sizes="128px"
+              />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-5xl">👋</div>
+              <div className="flex h-full w-full items-center justify-center text-[5rem] md:text-[6.5rem]">
+                {avatarUrl || '👋'}
+              </div>
+            )}
+
+            {isEditing && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover/avatar:opacity-100">
+                <div className="flex h-1/2 w-full items-center justify-center transition-colors hover:bg-white/20">
+                  <ImageUpload
+                    bucket="avatars"
+                    path="avatar"
+                    onUpload={(url) =>
+                      triggerSave(() => updateProfile(profile!.id, { avatar_url: url }))
+                    }
+                    className="flex h-full w-full items-center justify-center"
+                  >
+                    <span className="text-xs font-medium text-white">📷 Image</span>
+                  </ImageUpload>
+                </div>
+
+                <div className="h-px w-full bg-white/20" />
+
+                {/* ✅ Upgraded Emoji Input Half */}
+                <EmojiPickerModal
+                  onEmojiSelect={(emoji) =>
+                    triggerSave(() => updateProfile(profile!.id, { avatar_url: emoji }))
+                  }
+                  className="flex h-1/2 w-full cursor-pointer items-center justify-center transition-colors hover:bg-white/20"
+                >
+                  <span className="text-xs font-medium text-white">😀 Emoji</span>
+                </EmojiPickerModal>
+              </div>
             )}
           </div>
 
-          {/* Title */}
           <div className="mt-4 mb-2">
             <EditableText
               as="h1"
@@ -117,35 +132,25 @@ export function HeroSection({ profile, isEditing = false }: HeroSectionProps) {
           </div>
         </div>
 
-        {/* --- THE 50/50 CORE SPLIT ROW --- */}
+        {/* --- THE 50/50 CORE SPLIT ROW (RESTORED!) --- */}
         <div className="flex w-full flex-col gap-11.5 md:flex-row">
-          {/* LEFT COLUMN: Bio */}
+          {/* LEFT COLUMN: Bio (Now powered by BlockNote!) */}
           <div className="flex w-full shrink-0 grow-0 flex-col py-3 md:w-[calc(50%-23px)]">
-            <p className="m-0 px-1.5 pt-5.5 text-[1.25em] leading-[1.3] font-semibold wrap-break-word whitespace-pre-wrap">
-              {'A '}
-              <EditableText
-                as="span"
-                value={role}
-                onSave={handleSave('role')}
+            <div className="w-full">
+              <NotionEditorWrapper
+                initialContent={profile?.hero_content}
                 isEditing={isEditing}
-                singleLine
-                className="text-notion-green font-semibold"
-                placeholder="data analyst"
-              />{' '}
-              <EditableText
-                as="span"
-                value={bio}
-                onSave={handleSave('bio')}
-                isEditing={isEditing}
-                className="text-notion-text-muted"
-                placeholder="with a background in..."
+                // ✅ Explicitly typed as unknown to fix the TS error
+                onSave={(content: unknown) => {
+                  if (profile)
+                    triggerSave(() => updateProfile(profile.id, { hero_content: content }))
+                }}
               />
-            </p>
+            </div>
           </div>
 
           {/* RIGHT COLUMN: Action Card */}
           <div className="flex w-full shrink-0 grow-0 flex-col py-3 md:w-[calc(50%-23px)]">
-            {/* ✅ Reduced padding from p-3 to p-1.5 here! */}
             <div className="bg-notion-border-strong flex min-h-8 w-full flex-col rounded-[10px] border border-transparent p-1.5">
               <CalloutLinks profile={profile} isEditing={isEditing} />
             </div>

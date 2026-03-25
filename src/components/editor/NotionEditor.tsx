@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react' // Removed useEffect, useState
+import { useMemo } from 'react'
 import { PartialBlock } from '@blocknote/core'
 import { useCreateBlockNote } from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/mantine'
@@ -9,15 +9,15 @@ import { useSaveStatus } from '@/lib/context/SaveStatusContext'
 import { updatePage } from '@/lib/supabase/mutations'
 
 interface NotionEditorProps {
-  slug: string
+  slug?: string // ✅ Made optional
   initialContent: unknown
   isEditing: boolean
+  onSave?: (content: unknown) => void // ✅ Added custom save function
 }
 
-export function NotionEditor({ slug, initialContent, isEditing }: NotionEditorProps) {
+export function NotionEditor({ slug, initialContent, isEditing, onSave }: NotionEditorProps) {
   const { triggerSave } = useSaveStatus()
 
-  // Safely parse initial content
   const initialBlocks = useMemo(() => {
     try {
       if (typeof initialContent === 'string') {
@@ -32,12 +32,9 @@ export function NotionEditor({ slug, initialContent, isEditing }: NotionEditorPr
     }
   }, [initialContent])
 
-  // Initialize BlockNote
   const editor = useCreateBlockNote({
     initialContent: initialBlocks,
   })
-
-  // Removed the if (!mounted) check!
 
   return (
     <div className="-ml-12 w-full pt-4">
@@ -47,9 +44,17 @@ export function NotionEditor({ slug, initialContent, isEditing }: NotionEditorPr
         onChange={() => {
           if (!isEditing) return
           const currentContent = editor.document
-          triggerSave(() => updatePage(slug, currentContent as unknown))
+
+          // ✅ If a custom save function is passed, use it!
+          // Otherwise, fall back to the old page saving logic.
+          if (onSave) {
+            onSave(currentContent)
+          } else if (slug) {
+            triggerSave(() => updatePage(slug, currentContent as unknown))
+          }
         }}
         theme={{
+          // ... keep all your existing theme colors exactly the same here! ...
           colors: {
             editor: { text: '#f0efed', background: 'transparent' },
             menu: { text: '#f0efed', background: '#252525' },

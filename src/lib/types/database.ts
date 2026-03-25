@@ -25,6 +25,8 @@ export interface Database {
           updated_at: string
           cover_url: string | null
           custom_links: CustomLink[] | null
+          site_title: string
+          hero_content: unknown
         }
         Insert: Omit<Database['public']['Tables']['profile']['Row'], 'id' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['profile']['Insert']>
@@ -68,6 +70,7 @@ export interface Database {
           tool_tags: ToolTag[]
           position: number
           created_at: string
+          content: unknown
         }
         Insert: Omit<Database['public']['Tables']['projects']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['projects']['Insert']>

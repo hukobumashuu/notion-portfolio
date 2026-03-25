@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
   const profile = await getProfile()
-  const title = profile?.name ?? 'Portfolio'
+  const title = profile?.site_title || 'Portfolio'
   const description = profile?.bio ? `${profile.role} — ${profile.bio}` : 'Personal portfolio'
 
   return {
@@ -31,18 +31,14 @@ export default async function PublicPage() {
     getCollectionsWithProjects(),
   ])
 
-  const ownerName = profile?.name ?? 'Owner'
+  const siteTitle = profile?.site_title || "👨‍💻 Hey there, I'm Owner!"
 
   return (
     <SaveStatusProvider>
       <header className="bg-notion-bg sticky top-0 z-50 flex h-11 w-full items-center justify-between overflow-hidden pr-2.5 pl-3">
-        {/* Left Side: Mock Breadcrumb / Title */}
         <div className="flex items-center gap-2 overflow-hidden">
-          <span className="text-notion-text truncate text-[14px] font-medium">
-            Hey there, I&apos;m {ownerName}!
-          </span>
+          <span className="text-notion-text truncate text-[14px] font-medium">{siteTitle}</span>
         </div>
-
         <div></div>
       </header>
 

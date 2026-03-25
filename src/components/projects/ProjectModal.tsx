@@ -2,20 +2,17 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import type { ContentBlock, ContentBlockType, Project, ToolTag } from '@/lib/types'
+import type { Project, ToolTag } from '@/lib/types'
 import { TagPill } from '@/components/ui/TagPill'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EditableText } from '@/components/editor/EditableText'
 import { TagEditor } from '@/components/editor/TagEditor'
-import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
-import {
-  updateContentBlock,
-  updateProject,
-  addContentBlock,
-  deleteContentBlock,
-} from '@/lib/supabase/mutations'
+import { updateProject } from '@/lib/supabase/mutations'
 import { cn } from '@/lib/utils'
+import { NotionEditorWrapper } from '@/components/editor/NotionEditorWrapper'
+import { ImageUpload } from '@/components/editor/ImageUpload'
+import { EmojiPickerModal } from '@/components/editor/EmojiPickerModal'
 
 interface ProjectModalProps {
   project: Project
@@ -24,13 +21,6 @@ interface ProjectModalProps {
   onProjectUpdate?: (fields: Partial<Project>) => void
 }
 
-const BLOCK_TYPES: { type: ContentBlockType; label: string; icon: string }[] = [
-  { type: 'heading', label: 'Heading', icon: 'H1' },
-  { type: 'subheading', label: 'Subheading', icon: 'H2' },
-  { type: 'paragraph', label: 'Paragraph', icon: '¶' },
-  { type: 'blockquote', label: 'Quote', icon: '"' },
-]
-
 export function ProjectModal({
   project,
   isEditing = false,
@@ -38,34 +28,14 @@ export function ProjectModal({
   onProjectUpdate,
 }: ProjectModalProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [blocks, setBlocks] = useState<ContentBlock[]>([])
-  const [isLoadingBlocks, setIsLoadingBlocks] = useState(false)
   const { triggerSave } = useSaveStatus()
 
-  const [localToolTags, setLocalToolTags] = useState(project.tool_tags)
-  const [localSectorTags, setLocalSectorTags] = useState(project.sector_tags)
+  const [localToolTags, setLocalToolTags] = useState(project.tool_tags || [])
+  const [localSectorTags, setLocalSectorTags] = useState(project.sector_tags || [])
   const [localStatus] = useState(project.status)
   const [localDuration, setLocalDuration] = useState(project.duration)
 
   const modalRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    async function loadBlocks() {
-      setIsLoadingBlocks(true)
-      const supabase = createBrowserClient()
-      const { data } = await supabase
-        .from('content_blocks')
-        .select('*')
-        .eq('project_id', project.id)
-        .order('position', { ascending: true })
-      setBlocks(data ?? [])
-      setIsLoadingBlocks(false)
-    }
-
-    loadBlocks()
-  }, [isOpen, project.id])
 
   useEffect(() => {
     if (!isOpen) return
@@ -81,21 +51,7 @@ export function ProjectModal({
     modalRef.current?.focus()
   }, [isOpen])
 
-  async function handleAddBlock(type: ContentBlockType) {
-    await addContentBlock(project.id, type, blocks.length)
-    const supabase = createBrowserClient()
-    const { data } = await supabase
-      .from('content_blocks')
-      .select('*')
-      .eq('project_id', project.id)
-      .order('position', { ascending: true })
-    setBlocks(data ?? [])
-  }
-
-  async function handleDeleteBlock(id: string) {
-    await deleteContentBlock(id)
-    setBlocks((prev) => prev.filter((b) => b.id !== id))
-  }
+  const showCover = isEditing || !!project.thumbnail_url
 
   return (
     <>
@@ -129,40 +85,101 @@ export function ProjectModal({
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              {/* COVER BANNER */}
-              {project.thumbnail_url && (
-                <div className="border-notion-border relative h-[30vh] max-h-40 w-full shrink-0 border-b">
-                  <Image
-                    src={project.thumbnail_url}
-                    alt={project.title}
-                    fill
-                    className="object-cover object-[center_50%]"
-                    sizes="768px"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
+              {showCover && (
+                <div className="border-notion-border group/cover bg-notion-bg relative h-[30vh] max-h-40 w-full shrink-0 border-b">
+                  {isEditing ? (
+                    <ImageUpload
+                      bucket="projects"
+                      path={`thumbnail_${project.id}`}
+                      onUpload={(url) => {
+                        onProjectUpdate?.({ thumbnail_url: url })
+                        triggerSave(() => updateProject(project.id, { thumbnail_url: url }))
+                      }}
+                      className="h-full w-full"
+                    >
+                      {project.thumbnail_url ? (
+                        <Image
+                          src={project.thumbnail_url}
+                          alt={project.title}
+                          fill
+                          className="object-cover object-[center_50%]"
+                          sizes="768px"
+                        />
+                      ) : (
+                        <div className="text-notion-text-muted flex h-full w-full items-center justify-center">
+                          <span className="text-sm font-medium">Click to upload cover image</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/cover:bg-black/40">
+                        <span className="text-sm font-medium text-white opacity-0 transition-opacity group-hover/cover:opacity-100">
+                          Change Cover
+                        </span>
+                      </div>
+                    </ImageUpload>
+                  ) : project.thumbnail_url ? (
+                    <Image
+                      src={project.thumbnail_url}
+                      alt={project.title}
+                      fill
+                      className="object-cover object-[center_50%]"
+                      sizes="768px"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                      }}
+                    />
+                  ) : null}
                 </div>
               )}
 
-              {/* HERO SECTION: Avatar & Title */}
-              <div className="flex w-full flex-col items-start px-20 pb-20 sm:px-40">
+              <div className="flex w-full flex-col items-start px-8 pb-20 sm:px-20 md:px-32">
                 <div
                   className={cn(
                     'relative z-10 flex w-full flex-col',
-                    project.thumbnail_url ? '-mt-12 md:-mt-16' : 'pt-8',
+                    showCover ? '-mt-12 md:-mt-16' : 'pt-8',
                   )}
                 >
-                  <div className="bg-notion-bg-hover flex h-20 w-20 shrink-0 items-center justify-center rounded-lg text-5xl shadow-sm sm:h-24 sm:w-24 sm:text-6xl">
-                    {project.emoji ?? '📄'}
-                  </div>
+                  {/* ✅ THE FIX: The trigger needs to wrap the whole emoji so the picker attaches correctly */}
+                  {isEditing ? (
+                    <EmojiPickerModal
+                      onEmojiSelect={(emoji) => {
+                        onProjectUpdate?.({ emoji })
+                        triggerSave(() => updateProject(project.id, { emoji }))
+                      }}
+                      className="group/emoji relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-lg text-5xl shadow-sm drop-shadow-sm transition-all sm:h-24 sm:w-24 sm:text-6xl"
+                    >
+                      {project.emoji ?? '📄'}
+                      <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 opacity-0 transition-opacity group-hover/emoji:opacity-100">
+                        <span className="text-xs font-medium text-white">😀</span>
+                      </div>
+                    </EmojiPickerModal>
+                  ) : (
+                    <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-lg text-5xl shadow-sm drop-shadow-sm sm:h-24 sm:w-24 sm:text-6xl">
+                      {project.emoji ?? '📄'}
+                    </div>
+                  )}
 
-                  <h1 className="text-notion-text mt-4 mb-8 text-3xl font-bold tracking-tight md:text-4xl">
-                    {project.title}
-                  </h1>
+                  {isEditing ? (
+                    <div className="mt-4 mb-8 w-full">
+                      <EditableText
+                        as="h1"
+                        value={project.title}
+                        onSave={(title) => {
+                          onProjectUpdate?.({ title })
+                          triggerSave(() => updateProject(project.id, { title }))
+                        }}
+                        isEditing={isEditing}
+                        singleLine
+                        className="text-notion-text text-3xl font-bold tracking-tight md:text-4xl"
+                        placeholder="Project Title"
+                      />
+                    </div>
+                  ) : (
+                    <h1 className="text-notion-text mt-4 mb-8 text-3xl font-bold tracking-tight md:text-4xl">
+                      {project.title}
+                    </h1>
+                  )}
                 </div>
 
-                {/* PROPERTIES / METADATA */}
                 <div className="mb-8 w-full space-y-2">
                   {(localToolTags.length > 0 || isEditing) && (
                     <MetaRow label="Tools Used" icon="⊞">
@@ -246,40 +263,15 @@ export function ProjectModal({
 
                 <hr className="border-notion-border mb-8 w-full" />
 
-                {/* CONTENT BLOCKS */}
-                {isLoadingBlocks ? (
-                  <div className="w-full space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="bg-notion-border-strong h-4 animate-pulse rounded" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="w-full space-y-5">
-                    {blocks.map((block) => (
-                      <ContentBlockRenderer
-                        key={block.id}
-                        block={block}
-                        isEditing={isEditing}
-                        onDelete={() => handleDeleteBlock(block.id)}
-                      />
-                    ))}
-
-                    {isEditing && (
-                      <div className="border-notion-border mt-4 flex flex-wrap gap-2 border-t pt-4">
-                        {BLOCK_TYPES.map(({ type, label, icon }) => (
-                          <button
-                            key={type}
-                            onClick={() => handleAddBlock(type)}
-                            className="border-notion-border text-notion-text-muted hover:border-notion-teal hover:text-notion-teal flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs transition-colors"
-                          >
-                            <span className="font-mono">{icon}</span>
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div className="w-full">
+                  <NotionEditorWrapper
+                    initialContent={project.content}
+                    isEditing={isEditing}
+                    onSave={(content: unknown) => {
+                      triggerSave(() => updateProject(project.id, { content }))
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -305,87 +297,6 @@ function MetaRow({
         <span className="text-notion-text-muted text-[16px]">{label}</span>
       </div>
       <div className="flex min-h-7 flex-1 items-center">{children}</div>
-    </div>
-  )
-}
-
-function ContentBlockRenderer({
-  block,
-  isEditing,
-  onDelete,
-}: {
-  block: ContentBlock
-  isEditing: boolean
-  onDelete: () => void
-}) {
-  const { triggerSave } = useSaveStatus()
-
-  function handleSave(value: string) {
-    triggerSave(() => updateContentBlock(block.id, { content: value }))
-  }
-
-  const editableProps = {
-    value: block.content ?? '',
-    onSave: handleSave,
-    isEditing,
-  }
-
-  const blockContent = (() => {
-    switch (block.type) {
-      case 'heading':
-        return (
-          <h3 className="text-notion-text flex items-center gap-2 pt-2 text-[24px] font-bold">
-            {isEditing && <span className="text-notion-teal text-sm opacity-70">H1</span>}
-            <EditableText
-              {...editableProps}
-              as="span"
-              singleLine
-              placeholder="Section heading..."
-            />
-          </h3>
-        )
-      case 'subheading':
-        return (
-          <EditableText
-            {...editableProps}
-            as="h4"
-            singleLine
-            className="text-notion-text text-[20px] font-bold"
-            placeholder="Subheading..."
-          />
-        )
-      case 'paragraph':
-        return (
-          <EditableText
-            {...editableProps}
-            as="p"
-            className="text-notion-text text-[16px] leading-normal"
-            placeholder="Write something..."
-          />
-        )
-      case 'blockquote':
-        return (
-          <blockquote className="border-notion-text text-notion-text border-l-[3px] py-1 pl-4 text-[16px] italic">
-            <EditableText {...editableProps} as="p" placeholder="A key quote or insight..." />
-          </blockquote>
-        )
-      default:
-        return null
-    }
-  })()
-
-  return (
-    <div className={cn('group/block relative', isEditing && 'pr-8')}>
-      {blockContent}
-      {isEditing && (
-        <button
-          onClick={onDelete}
-          className="text-notion-text-muted absolute top-0 right-0 flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all group-hover/block:opacity-100 hover:text-red-400"
-          aria-label="Delete block"
-        >
-          ✕
-        </button>
-      )}
     </div>
   )
 }

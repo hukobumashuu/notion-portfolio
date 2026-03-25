@@ -20,7 +20,17 @@ export async function revalidatePublicPage(): Promise<void> {
 // ─── Profile ──────────────────────────────────────────────────────────────────
 
 type ProfileUpdate = Partial<
-  Pick<Profile, 'name' | 'role' | 'bio' | 'avatar_url' | 'cover_url' | 'custom_links'>
+  Pick<
+    Profile,
+    | 'name'
+    | 'role'
+    | 'bio'
+    | 'avatar_url'
+    | 'cover_url'
+    | 'custom_links'
+    | 'site_title'
+    | 'hero_content'
+  >
 >
 
 export async function updateProfile(id: string, fields: ProfileUpdate): Promise<void> {
@@ -35,7 +45,15 @@ export async function updateProfile(id: string, fields: ProfileUpdate): Promise<
 type ProjectUpdate = Partial<
   Pick<
     Project,
-    'title' | 'emoji' | 'status' | 'duration' | 'sector_tags' | 'tool_tags' | 'thumbnail_url'
+    | 'title'
+    | 'emoji'
+    | 'status'
+    | 'duration'
+    | 'sector_tags'
+    | 'tool_tags'
+    | 'thumbnail_url'
+    | 'position'
+    | 'content'
   >
 >
 

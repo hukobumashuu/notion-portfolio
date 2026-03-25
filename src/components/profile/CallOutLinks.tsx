@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { Profile, CustomLink } from '@/lib/types'
 import { updateProfile } from '@/lib/supabase/mutations'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
+import { EmojiPickerModal } from '@/components/editor/EmojiPickerModal'
 
 interface CalloutLinksProps {
   profile: Profile | null
@@ -62,12 +63,14 @@ export function CalloutLinks({ profile, isEditing }: CalloutLinksProps) {
               className="bg-notion-bg-card border-notion-border flex flex-col gap-3 rounded-lg border p-3"
             >
               <div className="flex gap-2">
-                <input
-                  value={editForm.emoji}
-                  onChange={(e) => setEditForm({ ...editForm, emoji: e.target.value })}
-                  className="bg-notion-bg focus:border-notion-teal/50 text-notion-text w-12 rounded border border-transparent text-center outline-none"
-                  placeholder="🔗"
-                />
+                <div className="w-12 shrink-0">
+                  <EmojiPickerModal
+                    onEmojiSelect={(emoji) => setEditForm({ ...editForm, emoji })}
+                    className="bg-notion-bg text-notion-text flex h-7.5 w-full cursor-pointer items-center justify-center rounded border border-transparent transition-colors hover:bg-white/5"
+                  >
+                    {editForm.emoji || '🔗'}
+                  </EmojiPickerModal>
+                </div>
                 <input
                   value={editForm.label}
                   onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
