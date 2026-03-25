@@ -7,12 +7,13 @@ import { BlockNoteView } from '@blocknote/mantine'
 import '@blocknote/mantine/style.css'
 import { useSaveStatus } from '@/lib/context/SaveStatusContext'
 import { updatePage } from '@/lib/supabase/mutations'
+import { createClient as createBrowserClient } from '@/lib/supabase/client'
 
 interface NotionEditorProps {
-  slug?: string // ✅ Made optional
+  slug?: string
   initialContent: unknown
   isEditing: boolean
-  onSave?: (content: unknown) => void // ✅ Added custom save function
+  onSave?: (content: unknown) => void
 }
 
 export function NotionEditor({ slug, initialContent, isEditing, onSave }: NotionEditorProps) {
@@ -34,6 +35,20 @@ export function NotionEditor({ slug, initialContent, isEditing, onSave }: Notion
 
   const editor = useCreateBlockNote({
     initialContent: initialBlocks,
+    uploadFile: async (file: File) => {
+      const supabase = createBrowserClient()
+      const fileExt = file.name.split('.').pop()
+      const fileName = `editor-img-${Date.now()}.${fileExt}`
+
+      const { error } = await supabase.storage.from('projects').upload(fileName, file, {
+        upsert: true,
+      })
+
+      if (error) throw new Error(error.message)
+
+      const { data } = supabase.storage.from('projects').getPublicUrl(fileName)
+      return data.publicUrl
+    },
   })
 
   return (
@@ -45,8 +60,6 @@ export function NotionEditor({ slug, initialContent, isEditing, onSave }: Notion
           if (!isEditing) return
           const currentContent = editor.document
 
-          // ✅ If a custom save function is passed, use it!
-          // Otherwise, fall back to the old page saving logic.
           if (onSave) {
             onSave(currentContent)
           } else if (slug) {
@@ -54,7 +67,6 @@ export function NotionEditor({ slug, initialContent, isEditing, onSave }: Notion
           }
         }}
         theme={{
-          // ... keep all your existing theme colors exactly the same here! ...
           colors: {
             editor: { text: '#f0efed', background: 'transparent' },
             menu: { text: '#f0efed', background: '#252525' },

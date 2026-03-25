@@ -9,6 +9,25 @@ import type { Collection, Project } from '@/lib/types'
 import { AddSectionButton } from '@/components/projects/AddSectionButton'
 import { PageManager } from '@/components/pages/PageManager'
 import { EditableNavbarTitle } from '@/components/editor/EditableNavbarTitle'
+import { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const profile = await getProfile()
+  const avatarUrl = profile?.avatar_url
+
+  // ✅ Same dynamic Favicon logic!
+  const iconUrl =
+    avatarUrl && avatarUrl.startsWith('http')
+      ? avatarUrl
+      : `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${avatarUrl || '👋'}</text></svg>`
+
+  return {
+    title: `Editor | ${profile?.site_title || 'Portfolio'}`,
+    icons: {
+      icon: iconUrl,
+    },
+  }
+}
 
 export default async function EditorPage() {
   const supabase = await createServerClient()
@@ -30,7 +49,13 @@ export default async function EditorPage() {
     <SaveStatusProvider>
       <header className="bg-notion-bg border-surface-border sticky top-0 z-50 flex h-11 w-full items-center justify-between overflow-hidden border-b pr-2.5 pl-3">
         <div className="flex items-center gap-2 overflow-hidden">
-          {profile?.id && <EditableNavbarTitle profileId={profile.id} initialTitle={siteTitle} />}
+          {profile?.id && (
+            <EditableNavbarTitle
+              profileId={profile.id}
+              initialTitle={siteTitle}
+              avatarUrl={profile.avatar_url}
+            />
+          )}
           <span className="text-teal ml-2 shrink-0 text-xs opacity-70">(Editor Mode)</span>
         </div>
         <div></div>
